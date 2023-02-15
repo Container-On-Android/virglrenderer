@@ -110,6 +110,11 @@ if with_drm_asahi
   conf_data.set('ENABLE_DRM_ASAHI', 1)
 endif
 
+with_drm_i915 = drm_renderers.contains('i915-experimental')
+if with_drm_i915
+  conf_data.set('ENABLE_DRM_I915', 1)
+endif
+
 with_drm_renderers = drm_renderers.length() > 0
 
 if with_drm_renderers
@@ -437,6 +442,7 @@ summary({'c_args': (' ').join(get_option('c_args')),
         'venus': with_venus,
         'drm-amdgpu': with_drm_amdgpu,
         'drm-asahi': with_drm_asahi,
+        'drm-i915': with_drm_i915,
         'drm-msm': with_drm_msm,
         'render server worker': with_render_server ? with_render_server_worker : 'none',
         'video': with_video,
