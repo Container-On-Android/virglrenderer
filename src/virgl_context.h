@@ -44,6 +44,7 @@ struct virgl_context_blob {
       int fd;
       uint32_t opaque_handle;
       struct pipe_resource *pipe_resource;
+      void *va_handle;
    } u;
 
    uint32_t map_info;

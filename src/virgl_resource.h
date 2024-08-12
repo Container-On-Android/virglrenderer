@@ -50,6 +50,9 @@ enum virgl_resource_fd_type {
     */
    VIRGL_RESOURCE_OPAQUE_HANDLE,
 
+   /* Resources that are virtual address based, do not need map again */
+   VIRGL_RESOURCE_VA_HANDLE,
+
    VIRGL_RESOURCE_FD_INVALID = -1,
 };
 
@@ -106,6 +109,8 @@ struct virgl_resource {
    struct virgl_resource_vulkan_info vulkan_info;
 
    void *private_data;
+
+   void *va_handle;
 };
 
 struct virgl_resource_pipe_callbacks {
@@ -156,6 +161,10 @@ struct virgl_resource *
 virgl_resource_create_from_iov(uint32_t res_id,
                                const struct iovec *iov,
                                int iov_count);
+
+struct virgl_resource *
+virgl_resource_create_from_va_handle(uint32_t res_id,
+                                     void *addr);
 
 void
 virgl_resource_remove(uint32_t res_id);
