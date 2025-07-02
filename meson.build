@@ -263,6 +263,8 @@ endif
 
 if get_option('buildtype') == 'debug'
    add_project_arguments('-DDEBUG=1', language : 'c')
+   add_project_arguments('-g', language : 'c')
+
 endif
 
 platforms = get_option('platforms')
