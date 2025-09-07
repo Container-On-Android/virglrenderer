@@ -56,6 +56,7 @@
  * @author Feng Jiang <jiangfeng@kylinos.cn>
  */
 
+#include "config.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -65,7 +66,19 @@
 #include <unistd.h>
 #include <epoxy/gl.h>
 #include <epoxy/egl.h>
+
+// Work around va.h declaring an enum as 0x80000000 which triggers an error
+// -Wpedantic=error on 32 bit
+// https://gitlab.freedesktop.org/virgl/virglrenderer/-/issues/464
+#if defined(__GNUC__) && (UINT_MAX == 0xffffffffu)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 #include <va/va.h>
+#if defined(__GNUC__) && (UINT_MAX == 0xffffffffu)
+#pragma GCC diagnostic pop
+#endif
+
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
 #include <drm_fourcc.h>
