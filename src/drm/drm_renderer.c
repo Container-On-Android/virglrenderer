@@ -30,6 +30,10 @@
 #  include "asahi/asahi_renderer.h"
 #endif
 
+#ifdef ENABLE_DRM_PANFROST
+#  include "panfrost/panfrost_renderer.h"
+#endif
+
 static struct virgl_renderer_capset_drm capset;
 
 static const struct backend {
@@ -60,6 +64,14 @@ static const struct backend {
       .name = "asahi",
       .probe = asahi_renderer_probe,
       .create = asahi_renderer_create,
+   },
+#endif
+#ifdef ENABLE_DRM_PANFROST
+   {
+      .context_type = VIRTGPU_DRM_CONTEXT_PANFROST,
+      .name = "panfrost",
+      .probe = panfrost_renderer_probe,
+      .create = panfrost_renderer_create,
    },
 #endif
 };

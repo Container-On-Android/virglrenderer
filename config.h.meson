@@ -42,6 +42,7 @@
 #mesondefine ENABLE_DRM_MSM
 #mesondefine ENABLE_DRM_AMDGPU
 #mesondefine ENABLE_DRM_ASAHI
+#mesondefine ENABLE_DRM_PANFROST
 #mesondefine ENABLE_LIBDRM
 #mesondefine ENABLE_RENDER_SERVER
 #mesondefine ENABLE_RENDER_SERVER_WORKER_PROCESS
