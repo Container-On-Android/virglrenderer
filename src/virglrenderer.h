@@ -365,7 +365,21 @@ struct virgl_renderer_resource_info {
    int fd;
 };
 
-#define VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION 0
+#define VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION 1
+
+/**
+ * Describes a handle type used in the native graphics API
+ */
+enum virgl_renderer_native_handle_type {
+   VIRGL_NATIVE_HANDLE_NONE,
+   /* handle is a valid pointer to a ID3D11Texture2D */
+   VIRGL_NATIVE_HANDLE_D3D_TEX2D,
+};
+
+/**
+ * The actual type is determined by `virgl_renderer_native_handle_type`
+ */
+typedef void *virgl_renderer_native_handle;
 
 struct virgl_renderer_resource_info_ext {
    int version;
@@ -373,7 +387,12 @@ struct virgl_renderer_resource_info_ext {
    bool has_dmabuf_export;
    int planes;
    uint64_t modifiers;
-   void *d3d_tex2d;
+   union {
+      /* this is for backwards compatibility */
+      void *d3d_tex2d;
+      virgl_renderer_native_handle native_handle;
+   };
+   enum virgl_renderer_native_handle_type native_type;
 };
 
 VIRGL_EXPORT int virgl_renderer_resource_get_info(int res_handle,

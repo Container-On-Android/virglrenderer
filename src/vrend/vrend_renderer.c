@@ -13109,24 +13109,19 @@ void vrend_renderer_resource_get_info(struct pipe_resource *pres,
    info->stride = util_format_get_nblocksx(res->base.format, u_minify(res->base.width0, 0)) * elsize;
 }
 
-int
-vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres, void **d3d_tex2d)
+void *
+vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres)
 {
 #ifdef WIN32
    struct vrend_resource *res = (struct vrend_resource *)pres;
 
    if (!vrend_state.native_share_texture)
-      return 0;
-
-   if (!res->d3d_tex2d)
-      return EINVAL;
-
-   *d3d_tex2d = res->d3d_tex2d;
-   return 0;
+      return NULL;
+   else
+      return res->d3d_tex2d;
 #else
    (void)pres;
-   (void)d3d_tex2d;
-   return ENOTSUP;
+   return NULL;
 #endif
 }
 
