@@ -259,7 +259,7 @@ vkr_allocator_init(void)
       (PFN_vkCreateInstance)get_proc_addr(VK_NULL_HANDLE, "vkCreateInstance");
    res = vk->CreateInstance(&inst_info, NULL, &vkr_allocator.instance);
    if (res != VK_SUCCESS)
-      goto fail;
+      goto early_fail;
 
    vkr_allocator_inst_proc_table_init(vkr_allocator.instance, get_proc_addr, vk);
 
@@ -325,6 +325,7 @@ fail:
    }
    vk->DestroyInstance(vkr_allocator.instance, NULL);
 
+early_fail:
    memset(&vkr_allocator, 0, sizeof(vkr_allocator));
 
    vkr_library_unload(&vkr_allocator.vulkan_library);
