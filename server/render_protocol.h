@@ -148,9 +148,11 @@ struct render_context_op_create_resource_request {
 struct render_context_op_create_resource_reply {
    enum virgl_resource_fd_type fd_type;
    uint32_t map_info; /* VIRGL_RENDERER_MAP_* */
-   /* vulkan_info is set if the fd_type is VIRGL_RESOURCE_FD_OPAQUE */
+   /* vulkan_info is set if the fd_type is opaque or Metal */
    struct virgl_resource_vulkan_info vulkan_info;
-   /* followed by 1 fd if not VIRGL_RESOURCE_FD_INVALID */
+   /* When fd_type == VIRGL_RESOURCE_METAL_BUFFER */
+   void *res_ptr;
+   /* otherwise followed by 1 fd if not VIRGL_RESOURCE_FD_INVALID */
 };
 
 /* Import a blob resource to the context
