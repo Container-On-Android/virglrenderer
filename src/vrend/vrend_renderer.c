@@ -3716,7 +3716,7 @@ void vrend_set_single_sampler_view(struct vrend_context *ctx,
                glTexParameteri(view->texture->target, GL_TEXTURE_BASE_LEVEL, view->u.tex.first_level);
                tex->cur_base = view->u.tex.first_level;
             }
-            if (tex->cur_max != view->u.tex.last_level) {
+            if (view->u.tex.last_level && tex->cur_max != view->u.tex.last_level) {
                glTexParameteri(view->texture->target, GL_TEXTURE_MAX_LEVEL, view->u.tex.last_level);
                tex->cur_max = view->u.tex.last_level;
             }
@@ -8860,7 +8860,9 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
 
    if (!format_can_texture_storage) {
       glTexParameteri(gr->target, GL_TEXTURE_BASE_LEVEL, 0);
-      glTexParameteri(gr->target, GL_TEXTURE_MAX_LEVEL, pr->last_level);
+      if (pr->last_level) {
+         glTexParameteri(gr->target, GL_TEXTURE_MAX_LEVEL, pr->last_level);
+      }
    }
 
    glBindTexture(gr->target, 0);
