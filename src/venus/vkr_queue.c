@@ -481,19 +481,23 @@ vkr_dispatch_vkResetFenceResourceMESA(struct vn_dispatch_context *dispatch,
 
    vn_replace_vkResetFenceResourceMESA_args_handle(args);
 
-   const VkFenceGetFdInfoKHR info = {
-      .sType = VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR,
-      .fence = args->fence,
-      .handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
-   };
-   VkResult result = vk->GetFenceFdKHR(args->device, &info, &fd);
-   if (result != VK_SUCCESS) {
-      vkr_context_set_fatal(ctx);
-      return;
-   }
+   if (dev->physical_device->KHR_external_fence_fd) {
+      const VkFenceGetFdInfoKHR info = {
+         .sType = VK_STRUCTURE_TYPE_FENCE_GET_FD_INFO_KHR,
+         .fence = args->fence,
+         .handleType = VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT,
+      };
+      VkResult result = vk->GetFenceFdKHR(args->device, &info, &fd);
+      if (result != VK_SUCCESS) {
+         vkr_context_set_fatal(ctx);
+         return;
+      }
 
-   if (fd >= 0)
-      close(fd);
+      if (fd >= 0)
+         close(fd);
+   } else {
+      vk->ResetFences(args->device, 1, &args->fence);
+   }
 }
 
 static void
