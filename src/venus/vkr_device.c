@@ -142,8 +142,15 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
       return;
    }
 
+   /* skip any emulated extensions */
    ext_count = 0;
    for (uint32_t i = 0; i < args->pCreateInfo->enabledExtensionCount; i++) {
+      if (physical_dev->is_dma_buf_emulated &&
+            !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME))
+         continue;
+      if (physical_dev->is_dma_buf_emulated &&
+            !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
+         continue;
       exts[ext_count++] = args->pCreateInfo->ppEnabledExtensionNames[i];
    }
 

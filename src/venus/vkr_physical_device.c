@@ -303,6 +303,18 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
       }
    }
 
+   /* add any emulated properties to show to the guest */
+   VkExtensionProperties prop;
+   uint32_t emulated_count = 0;
+   physical_dev->is_dma_buf_emulated = !physical_dev->EXT_external_memory_dma_buf && physical_dev->EXT_external_memory_metal;
+   emulated_count += physical_dev->is_dma_buf_emulated;
+   exts = realloc(exts, sizeof(*exts) * (advertised_count + emulated_count));
+   if (physical_dev->is_dma_buf_emulated) {
+      strcpy(prop.extensionName, VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
+      prop.specVersion = vkr_extension_get_spec_version(prop.extensionName);
+      exts[advertised_count++] = prop;
+   }
+
    if (physical_dev->KHR_external_fence_fd) {
       const VkPhysicalDeviceExternalFenceInfo fence_info = {
          .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO,
@@ -731,9 +743,38 @@ vkr_dispatch_vkGetPhysicalDeviceImageFormatProperties2(
       vkr_physical_device_from_handle(args->physicalDevice);
    struct vn_physical_device_proc_table *vk = &physical_dev->proc_table;
 
+   /* emulate handle for dmabuf */
+   if (physical_dev->is_dma_buf_emulated && physical_dev->is_metal_export_supported) {
+      VkPhysicalDeviceExternalImageFormatInfo *info =
+         vkr_find_struct(args->pImageFormatInfo, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO);
+      if (info && info->handleType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) {
+         info->handleType &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         info->handleType |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT;
+      }
+      if (info && info->handleType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) {
+         info->handleType &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         info->handleType |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT;
+      }
+   }
+
    vn_replace_vkGetPhysicalDeviceImageFormatProperties2_args_handle(args);
    args->ret = vk->GetPhysicalDeviceImageFormatProperties2(
       args->physicalDevice, args->pImageFormatInfo, args->pImageFormatProperties);
+
+   /* emulate handle for dmabuf */
+   if (physical_dev->is_dma_buf_emulated && physical_dev->is_metal_export_supported) {
+      VkExternalImageFormatProperties *img_props = vkr_find_struct(
+         args->pImageFormatProperties->pNext, VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES);
+      VkExternalMemoryProperties *props = &img_props->externalMemoryProperties;
+      if (img_props && (props->exportFromImportedHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)) {
+         props->exportFromImportedHandleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT;
+         props->exportFromImportedHandleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+      }
+      if (img_props && (props->compatibleHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)) {
+         props->compatibleHandleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT;
+         props->compatibleHandleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+      }
+   }
 }
 
 static void
@@ -759,9 +800,35 @@ vkr_dispatch_vkGetPhysicalDeviceExternalBufferProperties(
       vkr_physical_device_from_handle(args->physicalDevice);
    struct vn_physical_device_proc_table *vk = &physical_dev->proc_table;
 
+   /* emulate handle for dmabuf */
+   if (physical_dev->is_dma_buf_emulated && physical_dev->is_metal_export_supported) {
+      VkPhysicalDeviceExternalBufferInfo *info = (VkPhysicalDeviceExternalBufferInfo *)&args->pExternalBufferInfo;
+      if (info->handleType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) {
+         info->handleType &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         info->handleType |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+      }
+      if (info->handleType & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) {
+         info->handleType &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         info->handleType |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+      }
+   }
+
    vn_replace_vkGetPhysicalDeviceExternalBufferProperties_args_handle(args);
    vk->GetPhysicalDeviceExternalBufferProperties(
       args->physicalDevice, args->pExternalBufferInfo, args->pExternalBufferProperties);
+
+   /* emulate handle for dmabuf */
+   if (physical_dev->is_dma_buf_emulated && physical_dev->is_metal_export_supported) {
+      VkExternalMemoryProperties *props = &args->pExternalBufferProperties->externalMemoryProperties;
+      if (props->exportFromImportedHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT) {
+         props->exportFromImportedHandleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+         props->exportFromImportedHandleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+      }
+      if (props->compatibleHandleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT) {
+         props->compatibleHandleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+         props->compatibleHandleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+      }
+   }
 }
 
 static void

@@ -34,6 +34,7 @@ struct vkr_physical_device {
    bool is_dma_buf_fd_export_supported;
    bool is_opaque_fd_export_supported;
    bool is_metal_export_supported;
+   bool is_dma_buf_emulated;
    void *gbm_device;
    int udmabuf_dev_fd;
 

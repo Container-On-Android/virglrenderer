@@ -386,6 +386,7 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
          alloc_info->pNext = &local_import_info;
          valid_fd_types = 1 << VIRGL_RESOURCE_FD_DMABUF;
       } else if (physical_dev->is_metal_export_supported) {
+         assert(physical_dev->is_dma_buf_emulated);
          /* Disagreement between guest page size and host page size can cause mapping issues */
          alloc_info->allocationSize = align(alloc_info->allocationSize, getpagesize());
          if (!export_info) {
@@ -401,6 +402,10 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
    }
 
    if (export_info) {
+      if (physical_dev->is_dma_buf_emulated && physical_dev->is_metal_export_supported) {
+         export_info->handleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         export_info->handleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+      }
       if (export_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT)
          valid_fd_types |= 1 << VIRGL_RESOURCE_FD_OPAQUE;
       if (export_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
