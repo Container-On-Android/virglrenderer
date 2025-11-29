@@ -218,11 +218,15 @@ vkr_allocator_dev_proc_table_init(VkDevice dev_handle,
 int
 vkr_allocator_init(void)
 {
+   static const char *required_portability_exts[] = {
+      VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+   };
    static const char *required_extensions[] = {
       "VK_KHR_external_memory_fd",
    };
    struct vkr_inst_proc_table *vk = &vkr_allocator.proc_table;
    VkResult res;
+   bool has_portability_enumeration = false;
 
    bool ret = vkr_library_load(&vkr_allocator.vulkan_library);
    if (!ret) {
@@ -232,6 +236,12 @@ vkr_allocator_init(void)
    /* Get vkGetInstanceProcAddr from libvulkan */
    PFN_vkGetInstanceProcAddr get_proc_addr = vkr_allocator.vulkan_library.GetInstanceProcAddr;
 
+   PFN_vkEnumerateInstanceExtensionProperties enum_inst_ext_props =
+      (PFN_vkEnumerateInstanceExtensionProperties)get_proc_addr(VK_NULL_HANDLE,
+                                                                "vkEnumerateInstanceExtensionProperties");
+
+   has_portability_enumeration = vkr_library_has_portability_enumeration(enum_inst_ext_props);
+
    VkApplicationInfo app_info = {
       .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
       .apiVersion = VK_API_VERSION_1_1,
@@ -240,6 +250,9 @@ vkr_allocator_init(void)
    VkInstanceCreateInfo inst_info = {
       .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
       .pApplicationInfo = &app_info,
+      .flags = has_portability_enumeration ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0,
+      .enabledExtensionCount = has_portability_enumeration ? ARRAY_SIZE(required_portability_exts) : 0,
+      .ppEnabledExtensionNames = has_portability_enumeration ? required_portability_exts : NULL,
    };
 
    vk->CreateInstance =

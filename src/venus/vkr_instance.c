@@ -177,6 +177,11 @@ vkr_dispatch_vkCreateInstance(struct vn_dispatch_context *dispatch,
       create_info->pNext = &messenger_create_info;
    }
 
+   if (vkr_library_has_portability_enumeration(vk->EnumerateInstanceExtensionProperties)) {
+      ext_names[ext_count++] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+      create_info->flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+   }
+
    assert(layer_count <= ARRAY_SIZE(layer_names));
    create_info->enabledLayerCount = layer_count;
    create_info->ppEnabledLayerNames = layer_names;
