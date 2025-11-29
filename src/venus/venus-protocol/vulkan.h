@@ -28,9 +28,9 @@
 #include "vulkan_macos.h"
 #endif
 
-#ifdef VK_USE_PLATFORM_METAL_EXT
+//#ifdef VK_USE_PLATFORM_METAL_EXT
 #include "vulkan_metal.h"
-#endif
+//#endif
 
 #ifdef VK_USE_PLATFORM_VI_NN
 #include "vulkan_vi.h"
