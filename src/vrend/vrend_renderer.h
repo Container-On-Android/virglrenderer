@@ -42,6 +42,9 @@
 #ifdef WIN32
 #include <d3d11.h>
 #endif
+#ifdef ENABLE_METAL
+#include "vrend_metal.h"
+#endif
 
 #ifdef ENABLE_TESTS
 /* With this flag set, the transfer will not try to use GBM mappings.
@@ -106,6 +109,9 @@ struct vrend_resource {
    void *aux_plane_egl_image[VIRGL_GBM_MAX_PLANES];
 #ifdef WIN32
    ID3D11Texture2D *d3d_tex2d;
+#endif
+#ifdef ENABLE_METAL
+   MTLTexture_id metal_texture;
 #endif
 
    uint64_t size;
@@ -646,5 +652,10 @@ vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *res);
 int
 vrend_renderer_pipe_resource_get_layout(struct vrend_context *ctx,
                                         uint32_t out_res_id, uint32_t res_id);
+
+#ifdef ENABLE_METAL
+MTLTexture_id
+vrend_renderer_resource_metal_texture(struct pipe_resource *pres);
+#endif
 
 #endif

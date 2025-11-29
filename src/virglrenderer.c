@@ -511,6 +511,13 @@ static int virgl_renderer_resource_get_info_common(int res_handle,
          *type = VIRGL_NATIVE_HANDLE_D3D_TEX2D;
       }
    }
+#elif defined(ENABLE_METAL)
+   if (type && handle) {
+      *handle = vrend_renderer_resource_metal_texture(res->pipe_resource);
+      if (*handle) {
+         *type = VIRGL_NATIVE_HANDLE_METAL_TEXTURE;
+      }
+   }
 #endif
 
    return ret;

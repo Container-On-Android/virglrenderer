@@ -8582,6 +8582,44 @@ fail:
 }
 
 /*
+ * When using ANGLE/Metal, this function creates a Metal Texture and
+ * EGL image given certain flags.
+ */
+static void vrend_resource_metal_init(UNUSED struct vrend_resource *gr, UNUSED uint32_t format)
+{
+#if defined(ENABLE_METAL) && defined(HAVE_EPOXY_EGL_H)
+   MTLTexture_id tex = NULL;
+
+   if (!vrend_state.native_share_texture)
+      return;
+
+   if ((gr->base.bind & VIRGL_RES_BIND_SCANOUT) == 0)
+      return;
+
+   if (gr->base.depth0 != 1 || gr->base.last_level != 0 || gr->base.nr_samples > 1)
+      return;
+
+   if (!virgl_egl_metal_create_texture(egl, &gr->base, format, &tex))
+      goto fail;
+
+   gr->egl_image = virgl_egl_metal_image_from_texture(egl, tex);
+   if (!gr->egl_image)
+      goto fail;
+
+   gr->metal_texture = tex;
+
+   gr->storage_bits |= VREND_STORAGE_NATIVE_TEXTURE;
+   gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
+   return;
+
+fail:
+   if (tex)
+      virgl_metal_release_texture(gr->metal_texture);
+   gr->metal_texture = NULL;
+#endif
+}
+
+/*
  * When GBM allocation is enabled, this function creates a GBM buffer and
  * EGL image given certain flags.
  */
@@ -8670,6 +8708,7 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
 
    if (!image_oes) {
       vrend_resource_d3d_init(gr, format);
+      vrend_resource_metal_init(gr, format);
       vrend_resource_gbm_init(gr, format);
       if (gr->gbm_bo && !has_bit(gr->storage_bits, VREND_STORAGE_EGL_IMAGE))
          return 0;
@@ -8919,7 +8958,7 @@ void vrend_renderer_resource_destroy(struct vrend_resource *res)
       glDeleteMemoryObjectsEXT(1, &res->memobj);
    }
 
-#ifdef ENABLE_GBM
+#if defined(ENABLE_GBM) || defined(ENABLE_METAL)
    if (res->egl_image) {
       virgl_egl_image_destroy(egl, res->egl_image);
       for (unsigned i = 0; i < ARRAY_SIZE(res->aux_plane_egl_image); i++) {
@@ -8936,6 +8975,10 @@ void vrend_renderer_resource_destroy(struct vrend_resource *res)
 #ifdef WIN32
    if (res->d3d_tex2d)
       res->d3d_tex2d->lpVtbl->Release(res->d3d_tex2d);
+#endif
+#ifdef ENABLE_METAL
+   if (res->metal_texture)
+      virgl_metal_release_texture(res->metal_texture);
 #endif
    free(res);
 }
@@ -13124,6 +13167,19 @@ vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres)
    return NULL;
 #endif
 }
+
+#ifdef ENABLE_METAL
+MTLTexture_id
+vrend_renderer_resource_metal_texture(struct pipe_resource *pres)
+{
+   struct vrend_resource *res = (struct vrend_resource *)pres;
+
+   if (!vrend_state.native_share_texture)
+      return NULL;
+   else
+      return res->metal_texture;
+}
+#endif
 
 void vrend_renderer_get_cap_set(uint32_t cap_set, uint32_t *max_ver,
                                 uint32_t *max_size)

@@ -374,6 +374,8 @@ enum virgl_renderer_native_handle_type {
    VIRGL_NATIVE_HANDLE_NONE,
    /* handle is a valid pointer to a ID3D11Texture2D */
    VIRGL_NATIVE_HANDLE_D3D_TEX2D,
+   /* handle is a valid pointer to a MTLTexture */
+   VIRGL_NATIVE_HANDLE_METAL_TEXTURE,
 };
 
 /**

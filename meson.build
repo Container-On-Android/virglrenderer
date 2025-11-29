@@ -84,6 +84,7 @@ gbm_dep = not_found
 thread_dep = dependency('threads')
 epoxy_dep = dependency('epoxy', version: '>= 1.5.4')
 m_dep = cc.find_library('m', required : false)
+all_languages = ['c']
 
 conf_data = configuration_data()
 conf_data.set('VERSION', meson.project_version())
@@ -203,6 +204,14 @@ if cc.has_header('linux/udmabuf.h')
    conf_data.set('HAVE_LINUX_UDMABUF_H', 1)
 endif
 
+metal_dep = dependency('appleframeworks', modules : ['Metal'], required: false)
+if metal_dep.found()
+   conf_data.set('ENABLE_METAL', 1)
+   add_languages('objc', required: true, native: false)
+   objc = meson.get_compiler('objc')
+   all_languages += 'objc'
+endif
+
 foreach b : ['bswap32', 'bswap64', 'clz', 'clzll', 'expect', 'ffs', 'ffsll',
              'popcount', 'popcountll', 'types_compatible_p', 'unreachable']
   if cc.has_function(b)
@@ -262,7 +271,7 @@ else
 endif
 
 if get_option('buildtype') == 'debug'
-   add_project_arguments('-DDEBUG=1', language : 'c')
+   add_project_arguments('-DDEBUG=1', language : all_languages)
 endif
 
 platforms = get_option('platforms')
@@ -351,7 +360,7 @@ if with_venus
 
    if host_machine.system() == 'darwin'
       corefoundation = dependency('appleframeworks', modules : ['CoreFoundation'])
-      venus_deps += [corefoundation]
+      venus_deps += [corefoundation, metal_dep]
    endif
 
    conf_data.set('ENABLE_VENUS', 1)
@@ -405,8 +414,8 @@ configure_file(input : 'config.h.meson',
                output : 'config.h',
                configuration : conf_data)
 
-add_project_arguments('-imacros', meson.current_build_dir() / 'config.h', language : 'c')
-add_project_arguments('-DHAVE_CONFIG_H=1', language : 'c')
+add_project_arguments('-imacros', meson.current_build_dir() / 'config.h', language : all_languages)
+add_project_arguments('-DHAVE_CONFIG_H=1', language : all_languages)
 
 inc_configuration = include_directories(['.', 'src'])
 
@@ -439,6 +448,7 @@ summary({'c_args': (' ').join(get_option('c_args')),
         'egl': have_egl,
         'glx': have_glx,
         'gbm': gbm_dep.found(),
+        'metal': metal_dep.found(),
         'venus': with_venus,
         'drm-amdgpu': with_drm_amdgpu,
         'drm-asahi': with_drm_asahi,
