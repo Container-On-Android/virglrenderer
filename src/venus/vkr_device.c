@@ -151,6 +151,9 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
       if (physical_dev->is_dma_buf_emulated &&
             !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME))
          continue;
+      if (!physical_dev->EXT_image_drm_format_modifier &&
+            !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME))
+         continue;
       exts[ext_count++] = args->pCreateInfo->ppEnabledExtensionNames[i];
    }
 
