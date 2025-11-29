@@ -287,6 +287,8 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
          physical_dev->KHR_external_fence_fd = true;
       } else if (!strcmp(props->extensionName, VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME)) {
          physical_dev->EXT_image_drm_format_modifier = true;
+      } else if (!strcmp(props->extensionName, VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME)) {
+         physical_dev->EXT_queue_family_foreign = true;
       } else if (!strcmp(props->extensionName, VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME)) {
          physical_dev->EXT_external_memory_metal = true;
          /* hide from guest */
@@ -311,6 +313,7 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
    physical_dev->is_dma_buf_emulated = !physical_dev->EXT_external_memory_dma_buf && physical_dev->EXT_external_memory_metal;
    emulated_count += physical_dev->is_dma_buf_emulated;
    emulated_count += !physical_dev->EXT_image_drm_format_modifier;
+   emulated_count += !physical_dev->EXT_queue_family_foreign;
    exts = realloc(exts, sizeof(*exts) * (advertised_count + emulated_count));
    if (physical_dev->is_dma_buf_emulated) {
       strcpy(prop.extensionName, VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME);
@@ -319,6 +322,12 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
    }
    if (!physical_dev->EXT_image_drm_format_modifier) {
       strcpy(prop.extensionName, VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME);
+      prop.specVersion = vkr_extension_get_spec_version(prop.extensionName);
+      exts[advertised_count++] = prop;
+   }
+   if (!physical_dev->EXT_queue_family_foreign) {
+      /* FIXME: we don't actually emulate this yet as MoltenVK ignores queue family transfers... */
+      strcpy(prop.extensionName, VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME);
       prop.specVersion = vkr_extension_get_spec_version(prop.extensionName);
       exts[advertised_count++] = prop;
    }

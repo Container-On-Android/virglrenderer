@@ -154,6 +154,9 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
       if (!physical_dev->EXT_image_drm_format_modifier &&
             !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_IMAGE_DRM_FORMAT_MODIFIER_EXTENSION_NAME))
          continue;
+      if (!physical_dev->EXT_queue_family_foreign &&
+            !strcmp(args->pCreateInfo->ppEnabledExtensionNames[i], VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME))
+         continue;
       exts[ext_count++] = args->pCreateInfo->ppEnabledExtensionNames[i];
    }
 
