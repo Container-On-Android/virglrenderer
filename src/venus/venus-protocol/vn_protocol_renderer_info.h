@@ -12,7 +12,7 @@
 
 struct vn_info_extension_table {
    union {
-      bool enabled[185];
+      bool enabled[186];
       struct {
          bool ARM_rasterization_order_attachment_access;
          bool EXT_4444_formats;
@@ -40,6 +40,7 @@ struct vn_info_extension_table {
          bool EXT_extended_dynamic_state3;
          bool EXT_external_memory_acquire_unmodified;
          bool EXT_external_memory_dma_buf;
+         bool EXT_external_memory_metal;
          bool EXT_filter_cubic;
          bool EXT_fragment_shader_interlock;
          bool EXT_global_priority;
@@ -212,8 +213,8 @@ struct vn_info_extension {
 };
 
 /* sorted by extension names for bsearch */
-static const uint32_t _vn_info_extension_count = 185;
-static const struct vn_info_extension _vn_info_extensions[185] = {
+static const uint32_t _vn_info_extension_count = 186;
+static const struct vn_info_extension _vn_info_extensions[186] = {
    { "VK_ARM_rasterization_order_attachment_access", 343, 1 },
    { "VK_EXT_4444_formats", 341, 1 },
    { "VK_EXT_attachment_feedback_loop_dynamic_state", 525, 1 },
@@ -240,6 +241,7 @@ static const struct vn_info_extension _vn_info_extensions[185] = {
    { "VK_EXT_extended_dynamic_state3", 456, 2 },
    { "VK_EXT_external_memory_acquire_unmodified", 454, 1 },
    { "VK_EXT_external_memory_dma_buf", 126, 1 },
+   { "VK_EXT_external_memory_metal", 603, 1 },
    { "VK_EXT_filter_cubic", 171, 3 },
    { "VK_EXT_fragment_shader_interlock", 252, 1 },
    { "VK_EXT_global_priority", 175, 2 },
