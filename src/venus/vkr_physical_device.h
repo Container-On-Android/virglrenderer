@@ -23,6 +23,7 @@ struct vkr_physical_device {
 
    bool KHR_external_memory_fd;
    bool EXT_external_memory_dma_buf;
+   bool EXT_external_memory_metal;
 
    bool KHR_external_fence_fd;
    bool KHR_external_semaphore_fd;
@@ -31,6 +32,7 @@ struct vkr_physical_device {
    VkPhysicalDeviceIDProperties id_properties;
    bool is_dma_buf_fd_export_supported;
    bool is_opaque_fd_export_supported;
+   bool is_metal_export_supported;
    void *gbm_device;
    int udmabuf_dev_fd;
 

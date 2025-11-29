@@ -355,6 +355,18 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
 
          alloc_info->pNext = &local_import_info;
          valid_fd_types = 1 << VIRGL_RESOURCE_FD_DMABUF;
+      } else if (physical_dev->is_metal_export_supported) {
+         /* Disagreement between guest page size and host page size can cause mapping issues */
+         alloc_info->allocationSize = align(alloc_info->allocationSize, getpagesize());
+         if (!export_info) {
+            local_export_info = (const VkExportMemoryAllocateInfo){
+               .sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
+               .pNext = alloc_info->pNext,
+               .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT,
+            };
+            export_info = &local_export_info;
+            alloc_info->pNext = &local_export_info;
+         }
       }
    }
 
@@ -363,6 +375,8 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
          valid_fd_types |= 1 << VIRGL_RESOURCE_FD_OPAQUE;
       if (export_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT)
          valid_fd_types |= 1 << VIRGL_RESOURCE_FD_DMABUF;
+      if (export_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT)
+         valid_fd_types |= 1 << VIRGL_RESOURCE_METAL_BUFFER;
    }
 
    struct vkr_device_memory *mem = vkr_device_memory_create_and_add(ctx, args);
@@ -527,6 +541,7 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
 
    const bool can_export_dma_buf = mem->valid_fd_types & (1 << VIRGL_RESOURCE_FD_DMABUF);
    const bool can_export_opaque = mem->valid_fd_types & (1 << VIRGL_RESOURCE_FD_OPAQUE);
+   const bool can_export_metal = mem->valid_fd_types & (1 << VIRGL_RESOURCE_METAL_BUFFER);
    enum virgl_resource_fd_type fd_type;
    VkExternalMemoryHandleTypeFlagBits handle_type;
    struct virgl_resource_vulkan_info vulkan_info;
@@ -541,10 +556,16 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
       /* prefer dmabuf for easier mapping? */
       fd_type = VIRGL_RESOURCE_FD_DMABUF;
       handle_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
-   } else if (can_export_opaque) {
+   } else if (can_export_opaque || can_export_metal) {
       /* prefer opaque for performance? */
-      fd_type = VIRGL_RESOURCE_FD_OPAQUE;
-      handle_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+      if (can_export_opaque) {
+         fd_type = VIRGL_RESOURCE_FD_OPAQUE;
+         handle_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+      } else {
+         assert(can_export_metal);
+         fd_type = VIRGL_RESOURCE_METAL_BUFFER;
+         handle_type = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+      }
 
       STATIC_ASSERT(sizeof(vulkan_info.device_uuid) == VK_UUID_SIZE);
       STATIC_ASSERT(sizeof(vulkan_info.driver_uuid) == VK_UUID_SIZE);
@@ -562,6 +583,7 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
    }
 
    int fd;
+   MTLResource_id metal_buffer;
    if (mem->udmabuf_fd >= 0) {
       fd = os_dupfd_cloexec(mem->udmabuf_fd);
       if (fd < 0) {
@@ -575,6 +597,19 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
       fd = vkr_gbm_bo_get_fd(mem->gbm_bo);
       if (fd < 0) {
          vkr_log("mem gbm bo export failed (ret %d)", fd);
+         return false;
+      }
+   } else if (can_export_metal) {
+      assert(handle_type == VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT);
+      struct vn_device_proc_table *vk = &mem->device->proc_table;
+      const VkMemoryGetMetalHandleInfoEXT metal_info = {
+         .sType = VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT,
+         .memory = mem->base.handle.device_memory,
+         .handleType = handle_type,
+      };
+      VkResult ret = vk->GetMemoryMetalHandleEXT(mem->device->base.handle.device, &metal_info, &metal_buffer);
+      if (ret != VK_SUCCESS) {
+         vkr_log("metal export failed (vk ret %d)", ret);
          return false;
       }
    } else {
@@ -605,10 +640,15 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
 
    *out_blob = (struct virgl_context_blob){
       .type = fd_type,
-      .u.fd = fd,
       .map_info = map_info,
       .vulkan_info = vulkan_info,
    };
+
+   if (fd_type == VIRGL_RESOURCE_METAL_BUFFER) {
+      out_blob->u.metal_buffer = metal_buffer;
+   } else {
+      out_blob->u.fd = fd;
+   }
 
    return true;
 }
