@@ -135,6 +135,7 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
    add_count += physical_dev->EXT_external_memory_dma_buf;
    add_count += physical_dev->KHR_external_fence_fd;
    add_count += physical_dev->EXT_external_memory_metal;
+   add_count += physical_dev->KHR_portability_subset;
    exts = malloc(sizeof(*exts) * (ext_count + add_count));
    if (!exts) {
       args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
@@ -154,6 +155,8 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
       exts[ext_count++] = VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME;
    if (physical_dev->EXT_external_memory_metal)
       exts[ext_count++] = VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME;
+   if (physical_dev->KHR_portability_subset)
+      exts[ext_count++] = VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
 
    ((VkDeviceCreateInfo *)args->pCreateInfo)->ppEnabledExtensionNames = exts;
    ((VkDeviceCreateInfo *)args->pCreateInfo)->enabledExtensionCount = ext_count;

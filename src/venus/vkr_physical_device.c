@@ -289,6 +289,10 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
          physical_dev->EXT_external_memory_metal = true;
          /* hide from guest */
          continue;
+      } else if (!strcmp(props->extensionName, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
+         physical_dev->KHR_portability_subset = true;
+         /* hide from guest */
+         continue;
       }
 
       const uint32_t spec_ver = vkr_extension_get_spec_version(props->extensionName);
