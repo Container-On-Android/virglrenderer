@@ -137,6 +137,9 @@ vkr_allocator_get_external_mem_ext(struct vkr_inst_proc_table *vk,
       if (!strcmp(props->extensionName, VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME)) {
          name = VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME;
          break;
+      } else if (!strcmp(props->extensionName, VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME)) {
+         name = VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME;
+         break;
       }
    }
 
@@ -159,26 +162,37 @@ vkr_allocator_allocate_memory(struct virgl_resource *res)
    struct vkr_dev_proc_table *vk = &vkr_allocator.proc_tables[idx];
 
    int fd = -1;
-   if (virgl_resource_export_fd(res, &fd) != VIRGL_RESOURCE_FD_OPAQUE) {
-      if (fd >= 0)
-         close(fd);
-      return NULL;
-   }
-
+   VkImportMemoryMetalHandleInfoEXT metal_info = { 0 };
+   VkImportMemoryFdInfoKHR fd_info = { 0 };
    VkMemoryAllocateInfo alloc_info = {
       .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-      .pNext =
-         &(VkImportMemoryFdInfoKHR){ .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
-                                     .handleType =
-                                        VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
-                                     .fd = fd },
       .allocationSize = res->vulkan_info.allocation_size,
       .memoryTypeIndex = res->vulkan_info.memory_type_index
    };
 
+   if (res->fd_type == VIRGL_RESOURCE_METAL_BUFFER) {
+      metal_info = (VkImportMemoryMetalHandleInfoEXT){ .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT,
+                                                       .handle = res->metal_buffer,
+                                                       .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT };
+      alloc_info.pNext = &metal_info;
+   } else {
+      if (virgl_resource_export_fd(res, &fd) != VIRGL_RESOURCE_FD_OPAQUE) {
+         if (fd >= 0)
+            close(fd);
+         return NULL;
+      }
+
+      fd_info = (VkImportMemoryFdInfoKHR){ .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR,
+                                           .handleType =
+                                             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,
+                                           .fd = fd };
+      alloc_info.pNext = &fd_info;
+   }
+
    VkDeviceMemory mem_handle;
    if (vk->AllocateMemory(dev_handle, &alloc_info, NULL, &mem_handle) != VK_SUCCESS) {
-      close(fd);
+      if (fd >= 0)
+         close(fd);
       return NULL;
    }
 
