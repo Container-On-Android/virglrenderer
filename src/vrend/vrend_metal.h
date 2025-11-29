@@ -9,6 +9,7 @@
 
 typedef void *MTLDevice_id;
 typedef void *MTLTexture_id;
+typedef void *MTLBuffer_id;
 
 struct vrend_metal_texture_description {
    unsigned width;
@@ -23,6 +24,10 @@ struct vrend_metal_texture_description {
 bool virgl_metal_create_texture(MTLDevice_id device,
                                 const struct vrend_metal_texture_description *desc,
                                 MTLTexture_id *tex);
+
+bool virgl_metal_create_texture_from_buffer(MTLBuffer_id buffer,
+                                            const struct vrend_metal_texture_description *desc,
+                                            MTLTexture_id *tex);
 
 void virgl_metal_release_texture(MTLTexture_id tex);
 

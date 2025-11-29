@@ -107,6 +107,29 @@ bool virgl_metal_create_texture(MTLDevice_id device,
    return false;
 }
 
+bool virgl_metal_create_texture_from_buffer(MTLBuffer_id buffer,
+                                            const struct vrend_metal_texture_description *desc,
+                                            MTLTexture_id *tex)
+{
+   id<MTLBuffer> mtl_buffer = (id<MTLBuffer>)buffer;
+   id<MTLDevice> mtl_device = mtl_buffer.device;
+   MTLTextureDescriptor *descriptor = new_descriptor(desc);
+   if (descriptor) {
+      NSUInteger deviceAlignment, bytesPerRow;
+      /* Regardless of what we want, we have to respect the heap's options */
+      descriptor.resourceOptions = mtl_buffer.resourceOptions;
+      deviceAlignment = [mtl_device minimumLinearTextureAlignmentForPixelFormat:descriptor.pixelFormat];
+      bytesPerRow = align(desc->stride, deviceAlignment);
+      *tex = [mtl_buffer newTextureWithDescriptor:descriptor
+                                           offset:0
+                                      bytesPerRow:bytesPerRow];
+      [descriptor release];
+      return true;
+   }
+
+   return false;
+}
+
 void virgl_metal_release_texture(MTLTexture_id tex)
 {
    id<MTLTexture> mtl_texture = (id<MTLTexture>)tex;

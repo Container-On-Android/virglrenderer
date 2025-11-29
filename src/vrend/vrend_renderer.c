@@ -13440,9 +13440,6 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
       };
       struct vrend_resource *gr;
 
-      if (res->fd_type != VIRGL_RESOURCE_FD_DMABUF)
-         return EINVAL;
-
       gr = vrend_resource_create(&create_args);
       if (!gr)
          return ENOMEM;
@@ -13450,6 +13447,10 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
 #ifdef HAVE_EPOXY_EGL_H
       if (egl) {
 #ifdef ENABLE_GBM
+         if (res->fd_type != VIRGL_RESOURCE_FD_DMABUF) {
+            FREE(gr);
+            return EINVAL;
+         }
          int plane_fds[VIRGL_GBM_MAX_PLANES];
          uint32_t virgl_format;
          uint32_t drm_format;
@@ -13490,7 +13491,53 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
             return ret;
          }
 
-#else /* ENABLE_GBM */
+#elif defined(ENABLE_METAL)
+         int ret;
+
+         if (res->fd_type != VIRGL_RESOURCE_METAL_BUFFER) {
+            FREE(gr);
+            return EINVAL;
+         }
+         if (args->plane_count > 1) {
+            virgl_warn("%s: ignoring plane_count = %d and using the first one\n",
+                       __func__, args->plane_count);
+         }
+         const struct vrend_metal_texture_description desc = {
+            .width = args->width,
+            .height = args->height,
+            .stride = args->plane_strides[0],
+            .offset = args->plane_offsets[0],
+            .bind = args->bind,
+            .usage = args->usage,
+            .format = args->format,
+         };
+         MTLTexture_id texture;
+         
+         if (!virgl_metal_create_texture_from_buffer(res->metal_buffer,
+                                                     &desc,
+                                                     &texture)) {
+            FREE(gr);
+            virgl_error("%s: failed to create texture from MTLBuffer\n", __func__);
+            return EINVAL;
+         }
+         gr->egl_image = virgl_egl_metal_image_from_texture(egl, texture);
+         virgl_metal_release_texture(texture);
+         if (!gr->egl_image) {
+            virgl_error("%s: failed to create egl image\n", __func__);
+            FREE(gr);
+            return EINVAL;
+         }
+
+         gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
+         gr->is_imported = true;
+
+         ret = vrend_resource_alloc_texture(gr, args->format, gr->egl_image);
+         if (ret) {
+            virgl_egl_image_destroy(egl, gr->egl_image);
+            FREE(gr);
+            return ret;
+         }
+#else /* !ENABLE_METAL && !ENABLE_GBM */
          FREE(gr);
          virgl_error("%s: no EGL/GBM support \n", __func__);
          return EINVAL;
