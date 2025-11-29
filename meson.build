@@ -334,11 +334,11 @@ with_render_server = with_venus
 with_render_server_worker = get_option('render-server-worker')
 render_server_install_dir = get_option('prefix') / get_option('libexecdir')
 if with_venus
-   venus_dep = []
+   venus_deps = []
    if get_option('vulkan-dload')
       conf_data.set('ENABLE_VULKAN_DLOAD', 1)
    else
-      venus_dep = dependency('vulkan')
+      venus_deps += [dependency('vulkan')]
    endif
 
    if host_machine.system() in ['freebsd', 'openbsd']
@@ -347,6 +347,11 @@ if with_venus
       epoll_dep = dependency('epoll-shim')
    else
       epoll_dep = []
+   endif
+
+   if host_machine.system() == 'darwin'
+      corefoundation = dependency('appleframeworks', modules : ['CoreFoundation'])
+      venus_deps += [corefoundation]
    endif
 
    conf_data.set('ENABLE_VENUS', 1)

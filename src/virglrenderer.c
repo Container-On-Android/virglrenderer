@@ -1203,6 +1203,10 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
       res = virgl_resource_create_from_opaque_handle(ctx, args->res_handle, blob.u.opaque_handle);
       if (!res)
          return -ENOMEM;
+   } else if (blob.type == VIRGL_RESOURCE_METAL_BUFFER) {
+      res = virgl_resource_create_from_metal_buffer(ctx, args->res_handle, blob.u.metal_buffer, &blob.vulkan_info);
+      if (!res)
+         return -ENOMEM;
    } else if (blob.type != VIRGL_RESOURCE_FD_INVALID) {
       res = virgl_resource_create_from_fd(args->res_handle,
                                           blob.type,
@@ -1267,6 +1271,7 @@ int virgl_renderer_resource_map(uint32_t res_handle, void **out_map, uint64_t *o
          map_size = res->map_size;
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
          ret = vkr_allocator_resource_map(res, &map, &map_size);
          break;
       case VIRGL_RESOURCE_OPAQUE_HANDLE:
@@ -1327,6 +1332,7 @@ int virgl_renderer_resource_map_fixed(uint32_t res_handle, void *addr)
                                  MAP_FIXED | MAP_SHARED);
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
       case VIRGL_RESOURCE_FD_INVALID:
          /* Avoid a default case so that -Wswitch will tell us at compile time
           * if a new virgl resource type is added without being handled here.
@@ -1365,6 +1371,7 @@ int virgl_renderer_resource_unmap(uint32_t res_handle)
          ret = munmap(res->mapped, res->map_size);
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
          ret = vkr_allocator_resource_unmap(res);
          break;
       case VIRGL_RESOURCE_FD_INVALID:
@@ -1415,6 +1422,7 @@ virgl_renderer_resource_export_blob(uint32_t res_id, uint32_t *fd_type, int *fd)
       *fd_type = VIRGL_RENDERER_BLOB_FD_TYPE_SHM;
       break;
    case VIRGL_RESOURCE_OPAQUE_HANDLE:
+   case VIRGL_RESOURCE_METAL_BUFFER:
    case VIRGL_RESOURCE_FD_INVALID:
       /* Avoid a default case so that -Wswitch will tell us at compile time if a
        * new virgl resource type is added without being handled here.

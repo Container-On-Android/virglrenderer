@@ -187,7 +187,7 @@ endif
 if with_venus
    virgl_sources += venus_sources
    virgl_sources += venus_codegen
-   virgl_depends += [venus_dep]
+   virgl_depends += venus_deps
 endif
 
 if with_drm_renderers
