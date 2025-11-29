@@ -163,7 +163,9 @@ struct virgl_renderer_callbacks {
 #endif /* VIRGL_RENDERER_UNSTABLE_APIS */
 
 
-#define VIRGL_RENDERER_D3D11_SHARE_TEXTURE (1 << 12)
+#define VIRGL_RENDERER_NATIVE_SHARE_TEXTURE (1 << 12)
+/* Compatibility with older versions */
+#define VIRGL_RENDERER_D3D11_SHARE_TEXTURE (VIRGL_RENDERER_NATIVE_SHARE_TEXTURE)
 #define VIRGL_RENDERER_COMPAT_PROFILE (1 << 13)
 
 /* Blob allocations must be done by guest from dedicated heap (Host visible memory). */

@@ -401,7 +401,7 @@ struct global_renderer_state {
 #ifdef HAVE_EPOXY_EGL_H
    bool use_egl_fence : 1;
 #endif
-   bool d3d_share_texture : 1;
+   bool native_share_texture : 1;
    bool gbm_layout_feat : 1;
 };
 
@@ -7764,7 +7764,7 @@ int vrend_renderer_init(const struct vrend_if_cbs *cbs, uint32_t flags)
    }
 #endif
 
-   vrend_state.d3d_share_texture = flags & VREND_D3D11_SHARE_TEXTURE;
+   vrend_state.native_share_texture = flags & VREND_NATIVE_SHARE_TEXTURE;
 
    vrend_state.gbm_layout_feat = vrend_use_gbm_layout_feature(flags);
 
@@ -8541,7 +8541,7 @@ static void vrend_resource_d3d_init(UNUSED struct vrend_resource *gr, UNUSED uin
    };
    ID3D11Texture2D* d3d_tex2d = NULL;
 
-   if (!vrend_state.d3d_share_texture)
+   if (!vrend_state.native_share_texture)
       return;
 
    if ((gr->base.bind & VIRGL_RES_BIND_SCANOUT) == 0)
@@ -8570,7 +8570,7 @@ static void vrend_resource_d3d_init(UNUSED struct vrend_resource *gr, UNUSED uin
 
    gr->d3d_tex2d = d3d_tex2d;
 
-   gr->storage_bits |= VREND_STORAGE_D3D_TEXTURE;
+   gr->storage_bits |= VREND_STORAGE_NATIVE_TEXTURE;
    gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
    return;
 
@@ -13115,7 +13115,7 @@ vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres, void **d3d_t
 #ifdef WIN32
    struct vrend_resource *res = (struct vrend_resource *)pres;
 
-   if (!vrend_state.d3d_share_texture)
+   if (!vrend_state.native_share_texture)
       return 0;
 
    if (!res->d3d_tex2d)

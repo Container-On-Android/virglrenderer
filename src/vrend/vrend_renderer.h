@@ -77,7 +77,7 @@ struct vrend_context;
 #define VREND_STORAGE_HOST_SYSTEM_MEMORY BIT(5)
 #define VREND_STORAGE_GL_IMMUTABLE       BIT(6)
 #define VREND_STORAGE_GL_MEMOBJ          BIT(7)
-#define VREND_STORAGE_D3D_TEXTURE        BIT(8)
+#define VREND_STORAGE_NATIVE_TEXTURE     BIT(8)
 
 struct vrend_resource {
    struct pipe_resource base;
@@ -194,7 +194,7 @@ struct vrend_if_cbs {
 #define VREND_USE_EXTERNAL_BLOB (1 << 1)
 #define VREND_USE_ASYNC_FENCE_CB (1 << 2)
 #define VREND_USE_VIDEO          (1 << 3)
-#define VREND_D3D11_SHARE_TEXTURE (1 << 4)
+#define VREND_NATIVE_SHARE_TEXTURE (1 << 4)
 #define VREND_USE_COMPAT_CONTEXT (1 << 5)
 #define VREND_USE_GLES (1 << 6)
 #define VREND_USE_GBM_LAYOUT (1 << 7)
