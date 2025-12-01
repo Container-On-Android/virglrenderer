@@ -46,6 +46,10 @@
 #include "vrend/vrend_renderer.h"
 #include "vrend/vrend_winsys.h"
 
+#ifdef ENABLE_METAL
+#include "vrend/vrend_metal.h"
+#endif
+
 #ifndef WIN32
 #include "util/libsync.h"
 #endif
@@ -1501,6 +1505,60 @@ virgl_renderer_resource_import_blob(const struct virgl_renderer_resource_import_
    res->map_size = args->size;
 
    return 0;
+}
+
+enum virgl_renderer_native_handle_type
+virgl_renderer_create_handle_for_scanout(uint32_t res_id,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         uint32_t virgl_format,
+                                         uint32_t padding,
+                                         uint32_t stride,
+                                         uint32_t offset,
+                                         virgl_renderer_native_handle *handle)
+{
+   TRACE_FUNC();
+#ifdef ENABLE_METAL
+   struct virgl_resource *res = virgl_resource_lookup(res_id);
+
+   if (!res)
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   if (res->fd_type != VIRGL_RESOURCE_METAL_BUFFER)
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   struct vrend_metal_texture_description desc = {
+      .width = width,
+      .height = height,
+      .stride = stride,
+      .offset = offset,
+      .usage = PIPE_USAGE_IMMUTABLE,
+      .format = virgl_format,
+   };
+   MTLTexture_id tex;
+
+   if (!virgl_metal_create_texture_from_buffer(res->metal_buffer,
+                                               &desc,
+                                               &tex))
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   *handle = tex;
+   return VIRGL_NATIVE_HANDLE_METAL_TEXTURE;
+#else /* !ENABLE_METAL */
+   return VIRGL_NATIVE_HANDLE_NONE;
+#endif
+}
+
+void
+virgl_renderer_release_handle_for_scanout(enum virgl_renderer_native_handle_type type,
+                                          virgl_renderer_native_handle handle)
+{
+   TRACE_FUNC();
+#ifdef ENABLE_METAL
+   if (type == VIRGL_NATIVE_HANDLE_METAL_TEXTURE) {
+      virgl_metal_release_texture(handle);
+   }
+#endif
 }
 
 int

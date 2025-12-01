@@ -533,6 +533,38 @@ virgl_renderer_submit_cmd2(void *buffer,
                            uint64_t *in_fence_ids,
                            uint32_t num_in_fences);
 
+/**
+ * Blob resources are untyped but we may wish to create a native texture handle
+ * for scanout. Not all blobs support exporting to a file-descriptor so this
+ * can be used even in cases where `virgl_renderer_resource_export_blob` is not
+ * supported.
+ * 
+ * The user should assume the returned handle is immutable.
+ * 
+ * If a handle cannot be created, `VIRGL_RESOURCE_NATIVE_TYPE_NONE` will be
+ * returned.
+ * 
+ * If the return value is not `VIRGL_RESOURCE_NATIVE_TYPE_NONE`, the user MUST
+ * call `virgl_renderer_release_handle_for_scanout` with the returned handle
+ * and type when they are done using it. Otherwise, memory will be leaked.
+ */
+VIRGL_EXPORT enum virgl_renderer_native_handle_type
+virgl_renderer_create_handle_for_scanout(uint32_t res_id,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         uint32_t virgl_format,
+                                         uint32_t padding,
+                                         uint32_t stride,
+                                         uint32_t offset,
+                                         virgl_renderer_native_handle *handle);
+
+/**
+ * This frees a handle acquired from `virgl_renderer_create_handle_for_scanout`
+ */
+VIRGL_EXPORT void
+virgl_renderer_release_handle_for_scanout(enum virgl_renderer_native_handle_type type,
+                                          virgl_renderer_native_handle handle);
+
 /* vtest semi-private APIs: */
 VIRGL_EXPORT int virgl_renderer_attach_fence(int ctx_id, int fence_fd);
 VIRGL_EXPORT int virgl_renderer_get_fence_fd(uint64_t fence_id);
