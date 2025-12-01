@@ -50,6 +50,9 @@ struct virgl_context_blob {
    uint32_t map_info;
 
    struct virgl_resource_vulkan_info vulkan_info;
+
+   struct iovec *iov;
+   int iov_count;
 };
 
 struct virgl_context;

@@ -404,6 +404,7 @@ VIRGL_EXPORT int virgl_renderer_context_create_with_flags(uint32_t ctx_id,
 #define VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE     0x0001
 #define VIRGL_RENDERER_BLOB_FLAG_USE_SHAREABLE    0x0002
 #define VIRGL_RENDERER_BLOB_FLAG_USE_CROSS_DEVICE 0x0004
+#define VIRGL_RENDERER_BLOB_FLAG_USE_USERPTR      0x0008
 
 struct virgl_renderer_resource_create_blob_args
 {

@@ -1138,7 +1138,7 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
    TRACE_FUNC();
    struct virgl_resource *res;
    struct virgl_context *ctx;
-   struct virgl_context_blob blob;
+   struct virgl_context_blob blob = {0};
    bool has_host_storage;
    bool has_guest_storage;
    int ret;
@@ -1188,6 +1188,13 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
 
       res->map_info = VIRGL_RENDERER_MAP_CACHE_CACHED;
       return 0;
+   }
+
+   if (args->blob_flags & VIRGL_RENDERER_BLOB_FLAG_USE_USERPTR) {
+      if (!args->num_iovs || !args->iovecs)
+         return -EINVAL;
+      blob.iov = (struct iovec *)args->iovecs;
+      blob.iov_count = args->num_iovs;
    }
 
    ctx = virgl_context_lookup(args->ctx_id);
