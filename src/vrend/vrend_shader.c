@@ -5186,7 +5186,8 @@ get_source_info(struct dump_ctx *ctx,
          bool isabsolute = src->Register.Absolute;
          snprintf(fp64_src, sizeof(fp64_src), "%s", src_buf->buf);
          strbuf_fmt(src_buf, "fp64_src[%d]", i);
-         emit_buff(&ctx->glsl_strbufs, "%s.x = %spackDouble2x32(uvec2(%s%s))%s;\n", src_buf->buf, isabsolute ? "abs(" : "", fp64_src, swizzle, isabsolute ? ")" : "");
+         emit_buff(&ctx->glsl_strbufs, "%s.x = %spackDouble2x32(uvec2(%s%s.xy))%s;\n", src_buf->buf, isabsolute ? "abs(" : "", fp64_src, swizzle, isabsolute ? ")" : "");
+         emit_buff(&ctx->glsl_strbufs, "%s.y = %spackDouble2x32(uvec2(%s%s.zw))%s;\n", src_buf->buf, isabsolute ? "abs(" : "", fp64_src, swizzle, isabsolute ? ")" : "");
       }
    }
 
@@ -5819,7 +5820,15 @@ iter_instruction(struct tgsi_iterate_context *iter,
       emit_buff(&ctx->glsl_strbufs, "%s = %s(ivec4(%s));\n", dsts[0], get_string(dinfo.dstconv), srcs[0]);
       break;
    case TGSI_OPCODE_D2F:
-      emit_buff(&ctx->glsl_strbufs, "%s = %s(%s);\n", dsts[0], get_string(dinfo.dstconv), srcs[0]);
+      if (inst->Dst[0].Register.WriteMask == TGSI_WRITEMASK_XYZW) {
+         emit_buff(&ctx->glsl_strbufs, "%s.xy = vec2(float(%s.x), float(%s.y));\n", dsts[0], srcs[0], srcs[0]);
+      } else {
+         if (inst->Dst[0].Register.WriteMask & TGSI_WRITEMASK_X)
+            emit_buff(&ctx->glsl_strbufs, "%s = %s(%s.x);\n", dsts[0], get_string(dinfo.dstconv), srcs[0]);
+
+         if (inst->Dst[0].Register.WriteMask & TGSI_WRITEMASK_Y)
+            emit_buff(&ctx->glsl_strbufs, "%s = %s(%s.y);\n", dsts[0], get_string(dinfo.dstconv), srcs[0]);
+      }
       break;
    case TGSI_OPCODE_U2F:
       emit_buff(&ctx->glsl_strbufs, "%s = %s(uvec4(%s)%s);\n", dsts[0], get_string(dinfo.dstconv), srcs[0], writemask);
