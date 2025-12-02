@@ -35,15 +35,23 @@ vkr_library_preload_icd(void)
 
 #if defined(ENABLE_VULKAN_DLOAD)
 
+#ifdef __APPLE__
+#define LIBVULKAN1 "libvulkan.1.dylib"
+#define LIBVULKAN  "libvulkan.dylib"
+#else
+#define LIBVULKAN1 "libvulkan.so.1"
+#define LIBVULKAN  "libvulkan.so"
+#endif
+
 bool
 vkr_library_load(struct vulkan_library *lib)
 {
    if (lib->handle)
       return true;
 
-   lib->handle = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+   lib->handle = dlopen(LIBVULKAN1, RTLD_NOW | RTLD_LOCAL);
    if (lib->handle == NULL)
-      lib->handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+      lib->handle = dlopen(LIBVULKAN, RTLD_NOW | RTLD_LOCAL);
    if (lib->handle == NULL) {
       vkr_log("failed to open libvulkan: %s", dlerror());
       return false;
