@@ -53,6 +53,13 @@ option(
 )
 
 option(
+  'apir',
+  type : 'boolean',
+  value : 'false',
+  description : 'enable support for API Remoting'
+)
+
+option(
   'vulkan-dload',
   type : 'boolean',
   value : 'false',

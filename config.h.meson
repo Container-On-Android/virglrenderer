@@ -34,6 +34,7 @@
 #mesondefine HAVE_EPOXY_GLX_H
 #mesondefine CHECK_GL_ERRORS
 #mesondefine ENABLE_MINIGBM_ALLOCATION
+#mesondefine ENABLE_APIR
 #mesondefine ENABLE_VENUS
 #mesondefine ENABLE_VENUS_VALIDATE
 #mesondefine ENABLE_VULKAN_DLOAD

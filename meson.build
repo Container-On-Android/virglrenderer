@@ -336,7 +336,8 @@ if with_check_gl_errors
    conf_data.set('CHECK_GL_ERRORS', 1)
 endif
 
-with_venus = get_option('venus')
+with_apir = get_option('apir')
+with_venus = get_option('venus') or with_apir
 with_render_server = with_venus
 with_render_server_worker = get_option('render-server-worker')
 render_server_install_dir = get_option('prefix') / get_option('libexecdir')
@@ -395,6 +396,10 @@ if with_venus
    else
      error('unknown render server worker ' + with_render_server_worker)
    endif
+endif
+
+if with_apir
+    conf_data.set('ENABLE_APIR', 1)
 endif
 
 with_video = get_option('video')
