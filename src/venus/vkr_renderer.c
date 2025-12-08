@@ -10,6 +10,7 @@
 #include "venus_hw.h"
 
 #include "vkr_context.h"
+#include "apir-context.h"
 
 struct vkr_renderer_state {
    const struct vkr_renderer_callbacks *cbs;
@@ -124,7 +125,9 @@ vkr_renderer_create_context(uint32_t ctx_id,
       return false;
 
    list_addtail(&ctx->head, &vkr_state.contexts);
-
+#ifdef ENABLE_APIR
+   apir_init_context(ctx);
+#endif 
    return true;
 }
 
@@ -138,6 +141,9 @@ vkr_renderer_destroy_context(uint32_t ctx_id)
       return;
 
    list_del(&ctx->head);
+#ifdef ENABLE_APIR
+   apir_destroy_context(ctx);
+#endif
    vkr_context_destroy(ctx);
 }
 
