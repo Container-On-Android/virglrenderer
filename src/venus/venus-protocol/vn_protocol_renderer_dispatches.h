@@ -40,6 +40,11 @@
 #include "vn_protocol_renderer_host_copy.h"
 #include "vn_protocol_renderer_acceleration_structure.h"
 
+#ifdef ENABLE_APIR
+#include "apir-protocol.h"
+#include "apir-protocol-impl.h"
+#endif
+
 static inline const char *vn_dispatch_command_name(VkCommandTypeEXT type)
 {
     switch (type) {
@@ -699,14 +704,25 @@ static inline void vn_dispatch_command(struct vn_dispatch_context *ctx)
 
     vn_decode_VkCommandTypeEXT(ctx->decoder, &cmd_type);
     vn_decode_VkFlags(ctx->decoder, &cmd_flags);
-
+#ifdef ENABLE_APIR
     {
-        if (cmd_type < 331 && vn_dispatch_table[cmd_type])
-            vn_dispatch_table[cmd_type](ctx, cmd_flags);
-        else
-            vn_cs_decoder_set_fatal(ctx->decoder);
-    }
+       const int MAX_APIR_CMD_TYPE = VENUS_COMMAND_TYPE_LENGTH + APIR_COMMAND_TYPE_LENGTH;
+       ApirCommandType apir_cmd_type = cmd_type - VENUS_COMMAND_TYPE_LENGTH;
 
+       if (cmd_type < VENUS_COMMAND_TYPE_LENGTH && vn_dispatch_table[cmd_type])
+          vn_dispatch_table[cmd_type](ctx, cmd_flags);
+
+       else if (cmd_type < MAX_APIR_CMD_TYPE && apir_dispatch_command(apir_cmd_type))
+          apir_dispatch_command(apir_cmd_type)(ctx, cmd_flags);
+       else {
+          apir_log_error("ERROR: invalid command type: vn_cmd=%d, apir_cmd=%d (apir_name=%s, apir_function=%p | venus_cmd_length=%d, apir_cmd_length=%d)",
+                         cmd_type, apir_cmd_type,
+                         apir_command_name(apir_cmd_type), apir_dispatch_command(apir_cmd_type),
+                         VENUS_COMMAND_TYPE_LENGTH, APIR_COMMAND_TYPE_LENGTH);
+          vn_cs_decoder_set_fatal(ctx->decoder);
+       }
+    }
+#endif
     if (vn_cs_decoder_get_fatal(ctx->decoder))
         vn_dispatch_debug_log(ctx, "%s resulted in CS error", vn_dispatch_command_name(cmd_type));
 }
