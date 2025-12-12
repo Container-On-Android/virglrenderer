@@ -124,6 +124,28 @@ drm_asahi_sources = [
    'drm/asahi/asahi_renderer.h',
 ]
 
+rocm_sources = [
+   'rocm/hsakmt_device.h',
+   'rocm/hsakmt_device.c',
+   'rocm/hsakmt_context.h',
+   'rocm/hsakmt_context.c',
+   'rocm/hsakmt_vm.h',
+   'rocm/hsakmt_vm.c',
+   'rocm/hsakmt_query.h',
+   'rocm/hsakmt_query.c',
+   'rocm/hsakmt_events.h',
+   'rocm/hsakmt_events.c',
+   'rocm/hsakmt_memory.c',
+   'rocm/hsakmt_memory.h',
+   'rocm/hsakmt_queues.h',
+   'rocm/hsakmt_queues.c',
+   'rocm/hsakmt_hw.h',
+   'rocm/util/rbtree_amd.h',
+   'rocm/util/rbtree.h',
+   'rocm/util/rbtree.c',
+   'rocm/util/hsakmt_util.h',
+]
+
 proxy_sources = [
    'proxy/proxy_client.c',
    'proxy/proxy_common.c',
@@ -195,6 +217,13 @@ endif
 
 if with_drm_asahi
    virgl_sources += drm_asahi_sources
+endif
+
+if with_rocm
+   virgl_sources += rocm_sources
+   virgl_depends += [libhsakmt_dep]
+   virgl_depends += [libdrm_amdgpu_dep]
+   virgl_depends += [libnuma_dep]
 endif
 
 if with_render_server
