@@ -1707,14 +1707,21 @@ static int vrend_decode_ctx_get_blob(struct virgl_context *ctx,
 {
    TRACE_FUNC();
    struct vrend_decode_ctx *dctx = (struct vrend_decode_ctx *)ctx;
+   struct vrend_resource *res = (struct vrend_resource *)vrend_get_blob_pipe(dctx->grctx, blob_id);
 
    blob->type = VIRGL_RESOURCE_FD_INVALID;
    /* this transfers ownership and blob_id is no longer valid */
-   blob->u.pipe_resource = vrend_get_blob_pipe(dctx->grctx, blob_id);
+   blob->u.pipe_resource = &res->base;
    if (!blob->u.pipe_resource)
       return -EINVAL;
 
    blob->map_info = vrend_renderer_resource_get_map_info(blob->u.pipe_resource);
+
+   if ((blob->u.pipe_resource->bind & VIRGL_RES_BIND_LINEAR) &&
+       (blob->u.pipe_resource->bind & VIRGL_RES_BIND_SCANOUT)) {
+	blob->type = VIRGL_RESOURCE_FD_DMABUF;
+	blob->u.fd = gbm_bo_get_fd(res->gbm_bo);
+   }
    return 0;
 }
 

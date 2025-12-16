@@ -7768,6 +7768,10 @@ int vrend_renderer_init(const struct vrend_if_cbs *cbs, uint32_t flags)
 
    vrend_state.gbm_layout_feat = vrend_use_gbm_layout_feature(flags);
 
+#ifdef ENABLE_GBM_ALLOCATION
+   if (!gbm)
+      gbm = virgl_gbm_init(-1);
+#endif
    return 0;
 cleanup_and_fail:
    vrend_renderer_fini();
@@ -8590,6 +8594,9 @@ static void vrend_resource_gbm_init(struct vrend_resource *gr, uint32_t format)
 #if defined(HAVE_EPOXY_EGL_H) && defined(ENABLE_GBM_ALLOCATION)
    uint32_t gbm_flags = virgl_gbm_convert_flags(gr->base.bind);
    uint32_t gbm_format = 0;
+   bool is_linear_target = (gr->base.bind & VIRGL_BIND_LINEAR) &&
+                           (gr->base.bind & VIRGL_BIND_SCANOUT) &&
+                           (gr->base.bind & VIRGL_BIND_RENDER_TARGET);
    if (virgl_gbm_convert_format(&format, &gbm_format))
       return;
    if (vrend_winsys_different_gpu())
@@ -8609,7 +8616,7 @@ static void vrend_resource_gbm_init(struct vrend_resource *gr, uint32_t format)
     * GBM allocation may be less optimal compared to a regular GL allocation.
     * Skip GBM allocation when we don't actually need it.
     */
-   if (!vrend_state.gbm_layout_feat)
+   if (!vrend_state.gbm_layout_feat && !is_linear_target)
       return;
 
    /*
@@ -8631,6 +8638,14 @@ static void vrend_resource_gbm_init(struct vrend_resource *gr, uint32_t format)
       return;
 
    gr->gbm_bo = bo;
+
+   if (!egl) {
+      if (!is_linear_target) {
+         gr->gbm_bo = NULL;
+         gbm_bo_destroy(bo);
+      }
+      return;
+   }
    gr->storage_bits |= VREND_STORAGE_GBM_BUFFER;
 
    gr->map_info = virgl_gbm_get_map_info(bo);

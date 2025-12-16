@@ -196,6 +196,7 @@ VIRGL_EXPORT int virgl_renderer_get_fd_for_texture2(uint32_t tex_id, int *fd, in
 #define VIRGL_RES_BIND_CUSTOM        (1 << 17)
 #define VIRGL_RES_BIND_SCANOUT       (1 << 18)
 #define VIRGL_RES_BIND_SHARED        (1 << 20)
+#define VIRGL_RES_BIND_LINEAR        (1 << 22)
 
 enum virgl_renderer_structure_type_v0 {
    VIRGL_RENDERER_STRUCTURE_TYPE_NONE = 0,
