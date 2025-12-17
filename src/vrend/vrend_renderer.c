@@ -12736,7 +12736,8 @@ static void vrend_renderer_fill_caps_v2(int gl_ver, int gles_ver,  union virgl_c
    if (gbm) {
       if (has_feature(feat_memory_object) && has_feature(feat_memory_object_fd)) {
          if ((!strcmp(gbm_device_get_backend_name(gbm->device), "i915") ||
-              !strcmp(gbm_device_get_backend_name(gbm->device), "amdgpu")) &&
+              !strcmp(gbm_device_get_backend_name(gbm->device), "amdgpu") ||
+              !strcmp(gbm_device_get_backend_name(gbm->device), "drm")) &&
              !vrend_winsys_different_gpu())
             caps->v2.capability_bits |= VIRGL_CAP_ARB_BUFFER_STORAGE;
       }
