@@ -206,6 +206,22 @@ virgl_resource_create_from_iov(uint32_t res_id,
    return res;
 }
 
+struct virgl_resource *
+virgl_resource_create_from_va_handle(uint32_t res_id,
+                                     void *addr)
+{
+   struct virgl_resource *res;
+
+   res = virgl_resource_create(res_id);
+   if (!res)
+      return NULL;
+
+   res->fd_type = VIRGL_RESOURCE_VA_HANDLE;
+   res->va_handle = addr;
+
+   return res;
+}
+
 void
 virgl_resource_remove(uint32_t res_id)
 {

@@ -52,6 +52,7 @@
 
 #include "virglrenderer.h"
 #include "virtgpu_drm.h"
+#include "hsakmt/hsakmt_device.h"
 
 #include "virgl_context.h"
 #include "virgl_fence.h"
@@ -71,6 +72,7 @@ struct global_state {
    bool proxy_initialized;
    bool external_winsys_initialized;
    bool drm_initialized;
+   bool vhsakmt_initialized;
    bool fence_initialized;
 };
 
@@ -192,6 +194,10 @@ void virgl_renderer_fill_caps(uint32_t set, uint32_t version,
       if (state.drm_initialized)
          drm_renderer_capset(caps);
       break;
+   case VIRGL_RENDERER_CAPSET_HSAKMT:
+      if (state.vhsakmt_initialized)
+         vhsakmt_device_get_capset(set, caps);
+      break;
    default:
       break;
    }
@@ -250,6 +256,11 @@ int virgl_renderer_context_create_with_flags(uint32_t ctx_id,
          ctx = drm_renderer_create(nlen, name, state.cbs->get_drm_fd(state.cookie));
       else
          ctx = drm_renderer_create(nlen, name, -1);
+      break;
+   case VIRGL_RENDERER_CAPSET_HSAKMT:
+      if (!state.vhsakmt_initialized)
+         return EINVAL;
+      ctx = vhsakmt_device_create(nlen, name);
       break;
    default:
       return EINVAL;
@@ -576,6 +587,10 @@ void virgl_renderer_get_cap_set(uint32_t cap_set, uint32_t *max_ver,
       *max_ver = 0;
       *max_size = drm_renderer_capset(NULL);
       break;
+   case VIRGL_RENDERER_CAPSET_HSAKMT:
+      *max_ver = 1;
+      *max_size = vhsakmt_device_get_capset(cap_set, NULL);
+      break;
    default:
       *max_ver = 0;
       *max_size = 0;
@@ -777,6 +792,9 @@ void virgl_renderer_cleanup(UNUSED void *cookie)
    if (state.vrend_initialized)
       vrend_renderer_fini();
 
+   if (state.vhsakmt_initialized)
+      vhsakmt_device_fini();
+
    if (state.fence_initialized)
       virgl_fence_table_cleanup();
 
@@ -952,6 +970,13 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       state.drm_initialized = true;
    }
 
+   if ((flags & VIRGL_RENDER_USE_HSAKMT)) {
+      ret = vhsakmt_device_init();
+      if (ret)
+         goto fail;
+      state.vhsakmt_initialized = true;
+   }
+
    if (!state.fence_initialized) {
       ret = virgl_fence_table_init();
       if (ret) {
@@ -1001,6 +1026,9 @@ void virgl_renderer_reset(void)
 
    if (state.vrend_initialized)
       vrend_renderer_reset();
+
+   if (state.vrend_initialized)
+      vhsakmt_device_reset();
 
    if (state.drm_initialized)
       drm_renderer_reset();
@@ -1190,6 +1218,14 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
       return 0;
    }
 
+#ifdef ENABLE_HSAKMT_AMDGPU
+   if (args->blob_flags & VIRGL_RENDERER_BLOB_FLAG_USE_USERPTR) {
+       blob.iov = (struct iovec *)args->iovecs;
+       blob.iov_count = args->num_iovs;
+       blob.u.va_handle = NULL;
+   }
+#endif
+
    ctx = virgl_context_lookup(args->ctx_id);
    if (!ctx)
       return -EINVAL;
@@ -1201,6 +1237,10 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
    if (blob.type == VIRGL_RESOURCE_OPAQUE_HANDLE) {
       assert(!(args->blob_flags & VIRGL_RENDERER_BLOB_FLAG_USE_SHAREABLE));
       res = virgl_resource_create_from_opaque_handle(ctx, args->res_handle, blob.u.opaque_handle);
+      if (!res)
+         return -ENOMEM;
+   } else if (blob.type == VIRGL_RESOURCE_VA_HANDLE) {
+      res = virgl_resource_create_from_va_handle(args->res_handle, blob.u.va_handle);
       if (!res)
          return -ENOMEM;
    } else if (blob.type != VIRGL_RESOURCE_FD_INVALID) {
@@ -1269,6 +1309,11 @@ int virgl_renderer_resource_map(uint32_t res_handle, void **out_map, uint64_t *o
       case VIRGL_RESOURCE_FD_OPAQUE:
          ret = vkr_allocator_resource_map(res, &map, &map_size);
          break;
+      case VIRGL_RESOURCE_VA_HANDLE:
+         /* Return the virtual address resource already has, no need for mapping. */
+         map = res->va_handle;
+         map_size = res->map_size;
+         break;
       case VIRGL_RESOURCE_OPAQUE_HANDLE:
          map = ctx->resource_map(ctx, res, NULL, PROT_WRITE | PROT_READ, MAP_SHARED);
          map_size = res->map_size;
@@ -1328,6 +1373,7 @@ int virgl_renderer_resource_map_fixed(uint32_t res_handle, void *addr)
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
       case VIRGL_RESOURCE_FD_INVALID:
+      case VIRGL_RESOURCE_VA_HANDLE:
          /* Avoid a default case so that -Wswitch will tell us at compile time
           * if a new virgl resource type is added without being handled here.
           */
@@ -1373,6 +1419,9 @@ int virgl_renderer_resource_unmap(uint32_t res_handle)
           */
          ret = -EINVAL;
          break;
+      case VIRGL_RESOURCE_VA_HANDLE:
+         /* Do nothing because the virtual address is not obtained from mapping. */
+         break;
       }
    }
 
@@ -1416,6 +1465,7 @@ virgl_renderer_resource_export_blob(uint32_t res_id, uint32_t *fd_type, int *fd)
       break;
    case VIRGL_RESOURCE_OPAQUE_HANDLE:
    case VIRGL_RESOURCE_FD_INVALID:
+   case VIRGL_RESOURCE_VA_HANDLE:
       /* Avoid a default case so that -Wswitch will tell us at compile time if a
        * new virgl resource type is added without being handled here.
        */

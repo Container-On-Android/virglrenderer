@@ -84,6 +84,13 @@ option(
 )
 
 option(
+  'hsakmt-amdgpu-experimental',
+  type : 'boolean',
+  value : 'false',
+  description : 'enable support for amd hsakmt native context'
+)
+
+option(
   'render-server-worker',
   type : 'combo',
   value : 'process',
