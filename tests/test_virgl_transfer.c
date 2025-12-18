@@ -784,6 +784,12 @@ START_TEST(virgl_test_transfer_to_staging_with_iov_succeeds)
   ck_assert_int_eq(ret, 0);
 
   virgl_renderer_ctx_detach_resource(ctx.ctx_id, res.handle);
+
+  virgl_encoder_transfer(&ctx, &res, 0, 0, &box, 0, VIRGL_TRANSFER_TO_HOST);
+
+  ret = testvirgl_ctx_send_cmdbuf(&ctx);
+  ck_assert_int_eq(ret, EINVAL);
+
   testvirgl_destroy_backed_res(&res);
   testvirgl_fini_ctx_cmdbuf(&ctx);
 }

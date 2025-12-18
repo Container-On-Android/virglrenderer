@@ -139,6 +139,9 @@ START_TEST(virgl_test_clear)
     /* cleanup */
     virgl_renderer_ctx_detach_resource(ctx.ctx_id, res.handle);
 
+    ret = virgl_renderer_transfer_read_iov(res.handle, ctx.ctx_id, 0, 50, 0, &box, 0, NULL, 0);
+    ck_assert_int_eq(ret, EINVAL);
+
     testvirgl_destroy_backed_res(&res);
 
     testvirgl_fini_ctx_cmdbuf(&ctx);
