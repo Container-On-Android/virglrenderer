@@ -79,6 +79,11 @@
    if (name != _stack_##name)                                                            \
    free(name)
 
+/* Used for DRM format emulation when extension is not available */
+#ifndef DRM_FORMAT_MOD_LINEAR
+#define DRM_FORMAT_MOD_LINEAR (0)
+#endif
+
 struct vn_info_extension_table;
 struct vkr_context;
 struct vkr_ring;

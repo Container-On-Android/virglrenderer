@@ -10,6 +10,7 @@
 
 struct render_socket {
    int fd;
+   bool is_seqpacket;
 };
 
 bool

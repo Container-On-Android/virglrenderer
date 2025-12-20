@@ -15,12 +15,14 @@
 int
 proxy_renderer_init(const struct proxy_renderer_cbs *cbs, uint32_t flags)
 {
+   bool in_process = !(flags & VIRGL_RENDERER_RENDER_SERVER);
+
    assert(flags & VIRGL_RENDERER_NO_VIRGL);
 
    proxy_renderer.cbs = cbs;
    proxy_renderer.flags = flags;
 
-   proxy_renderer.server = proxy_server_create();
+   proxy_renderer.server = proxy_server_create(in_process);
    if (!proxy_renderer.server)
       goto fail;
 

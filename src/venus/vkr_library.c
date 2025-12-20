@@ -35,15 +35,23 @@ vkr_library_preload_icd(void)
 
 #if defined(ENABLE_VULKAN_DLOAD)
 
+#ifdef __APPLE__
+#define LIBVULKAN1 "libvulkan.1.dylib"
+#define LIBVULKAN  "libvulkan.dylib"
+#else
+#define LIBVULKAN1 "libvulkan.so.1"
+#define LIBVULKAN  "libvulkan.so"
+#endif
+
 bool
 vkr_library_load(struct vulkan_library *lib)
 {
    if (lib->handle)
       return true;
 
-   lib->handle = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+   lib->handle = dlopen(LIBVULKAN1, RTLD_NOW | RTLD_LOCAL);
    if (lib->handle == NULL)
-      lib->handle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+      lib->handle = dlopen(LIBVULKAN, RTLD_NOW | RTLD_LOCAL);
    if (lib->handle == NULL) {
       vkr_log("failed to open libvulkan: %s", dlerror());
       return false;
@@ -89,3 +97,27 @@ vkr_library_unload(struct vulkan_library *lib)
 }
 
 #endif /* ENABLE_VULKAN_DLOAD */
+
+bool
+vkr_library_has_portability_enumeration(PFN_vkEnumerateInstanceExtensionProperties enum_inst_ext_props)
+{
+   uint32_t propertyCount = 0;
+   VkExtensionProperties *properties;
+   VkResult ret;
+   bool has_portability_enumeration = false;
+
+   ret = enum_inst_ext_props(NULL, &propertyCount, NULL);
+   if (ret != VK_SUCCESS) {
+      return false;
+   }
+   properties = calloc(propertyCount, sizeof(*properties));
+   ret = enum_inst_ext_props(NULL, &propertyCount, properties);
+   for (int i = 0; ret == VK_SUCCESS && i < propertyCount; i++) {
+      if (!strcmp(properties[i].extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
+         has_portability_enumeration = true;
+         break;
+      }
+   }
+   free(properties);
+   return has_portability_enumeration;
+}

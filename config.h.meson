@@ -38,6 +38,7 @@
 #mesondefine ENABLE_VULKAN_DLOAD
 #mesondefine ENABLE_VULKAN_PRELOAD
 #mesondefine ENABLE_GBM
+#mesondefine ENABLE_METAL
 #mesondefine ENABLE_DRM
 #mesondefine ENABLE_DRM_MSM
 #mesondefine ENABLE_DRM_AMDGPU

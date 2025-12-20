@@ -9,9 +9,81 @@
 #include "vkr_physical_device.h"
 
 static void
+vkr_image_fix_create_info(struct vkr_device *dev,
+                          VkImageCreateInfo *pCreateInfo)
+{
+   VkExternalMemoryImageCreateInfo *ext_create_info;
+
+   ext_create_info = vkr_find_struct(
+            pCreateInfo, VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO);
+   if (ext_create_info) {
+      /* strip out dmabuf */
+      if ((ext_create_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) != 0) {
+         ext_create_info->handleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         /* add in supported handles */
+         if (dev->physical_device->is_metal_export_supported) {
+            ext_create_info->handleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT;
+         }
+      }
+   }
+}
+
+static VkResult
+vkr_image_fix_drm_format(struct vkr_device *dev,
+                         VkImageCreateInfo *pCreateInfo)
+{
+   const VkImageDrmFormatModifierExplicitCreateInfoEXT* drm_format_info =
+            vkr_find_struct(pCreateInfo, VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT);
+   const VkImageDrmFormatModifierListCreateInfoEXT* drm_format_list =
+            vkr_find_struct(pCreateInfo, VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_LIST_CREATE_INFO_EXT);
+
+   if (pCreateInfo->tiling != VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT || (!drm_format_info && !drm_format_list)) {
+      return VK_SUCCESS;
+   }
+
+   if (drm_format_info && drm_format_info->drmFormatModifier == DRM_FORMAT_MOD_LINEAR) {
+      pCreateInfo->tiling = VK_IMAGE_TILING_LINEAR;
+      return VK_SUCCESS;
+   }
+
+   for (int i = 0; drm_format_list && i < drm_format_list->drmFormatModifierCount; i++) {
+      if (drm_format_list->pDrmFormatModifiers[i] == DRM_FORMAT_MOD_LINEAR) {
+         pCreateInfo->tiling = VK_IMAGE_TILING_LINEAR;
+         return VK_SUCCESS;
+      }
+   }
+
+   vkr_log("only DRM_FORMAT_MOD_LINEAR is supported");
+   return VK_ERROR_FORMAT_NOT_SUPPORTED;
+}
+
+static VkResult
+vkr_image_emulate_drm_format_modifier_properties(UNUSED struct vkr_device *dev,
+                                                 UNUSED VkImage image,
+                                                 VkImageDrmFormatModifierPropertiesEXT* pProperties)
+{
+   pProperties->drmFormatModifier = DRM_FORMAT_MOD_LINEAR;
+   return VK_SUCCESS;
+}
+
+static void
 vkr_dispatch_vkCreateImage(struct vn_dispatch_context *dispatch,
                            struct vn_command_vkCreateImage *args)
 {
+   struct vkr_device *dev = vkr_device_from_handle(args->device);
+
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_image_fix_create_info(dev, (VkImageCreateInfo *)args->pCreateInfo);
+   }
+
+   if (!dev->physical_device->EXT_image_drm_format_modifier) {
+      args->ret = vkr_image_fix_drm_format(dev, (VkImageCreateInfo *)args->pCreateInfo);
+      if (args->ret != VK_SUCCESS) {
+         return;
+      }
+   }
+
    /* XXX If VkExternalMemoryImageCreateInfo is chained by the app, all is
     * good.  If it is not chained, we might still bind an external memory to
     * the image, because vkr_dispatch_vkAllocateMemory makes any HOST_VISIBLE
@@ -150,6 +222,11 @@ vkr_dispatch_vkGetDeviceImageSubresourceLayout(
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_image_fix_create_info(dev, (VkImageCreateInfo *)args->pInfo->pCreateInfo);
+   }
+
    vn_replace_vkGetDeviceImageSubresourceLayout_args_handle(args);
    vk->GetDeviceImageSubresourceLayout(args->device, args->pInfo, args->pLayout);
 }
@@ -163,8 +240,14 @@ vkr_dispatch_vkGetImageDrmFormatModifierPropertiesEXT(
    struct vn_device_proc_table *vk = &dev->proc_table;
 
    vn_replace_vkGetImageDrmFormatModifierPropertiesEXT_args_handle(args);
-   args->ret = vk->GetImageDrmFormatModifierPropertiesEXT(args->device, args->image,
-                                                          args->pProperties);
+
+   if (dev->physical_device->EXT_image_drm_format_modifier) {
+      args->ret = vk->GetImageDrmFormatModifierPropertiesEXT(args->device, args->image,
+                                                            args->pProperties);
+   } else {
+      args->ret = vkr_image_emulate_drm_format_modifier_properties(dev, args->image,
+                                                                   args->pProperties);
+   }
 }
 
 static void
@@ -219,6 +302,11 @@ vkr_dispatch_vkGetDeviceImageMemoryRequirements(
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_image_fix_create_info(dev, (VkImageCreateInfo *)args->pInfo->pCreateInfo);
+   }
+
    vn_replace_vkGetDeviceImageMemoryRequirements_args_handle(args);
    vk->GetDeviceImageMemoryRequirements(args->device, args->pInfo,
                                         args->pMemoryRequirements);
@@ -231,6 +319,11 @@ vkr_dispatch_vkGetDeviceImageSparseMemoryRequirements(
 {
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
+
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_image_fix_create_info(dev, (VkImageCreateInfo *)args->pInfo->pCreateInfo);
+   }
 
    vn_replace_vkGetDeviceImageSparseMemoryRequirements_args_handle(args);
    vk->GetDeviceImageSparseMemoryRequirements(args->device, args->pInfo,

@@ -32,6 +32,9 @@
 #ifdef WIN32
 #include <d3d11.h>
 #endif
+#ifdef ENABLE_METAL
+#include "vrend_metal.h"
+#endif
 
 struct virgl_egl;
 
@@ -80,10 +83,13 @@ void *virgl_egl_image_from_dmabuf(struct virgl_egl *egl,
                                   const int *plane_fds,
                                   const uint32_t *plane_strides,
                                   const uint32_t *plane_offsets);
-void virgl_egl_image_destroy(struct virgl_egl *egl, void *image);
 
 void *virgl_egl_image_from_gbm_bo(struct virgl_egl *egl, struct gbm_bo *bo);
 void *virgl_egl_aux_plane_image_from_gbm_bo(struct virgl_egl *egl, struct gbm_bo *bo, int plane);
+#endif
+
+#if defined(ENABLE_GBM) || defined(ENABLE_METAL)
+void virgl_egl_image_destroy(struct virgl_egl *egl, void *image);
 #endif
 
 bool virgl_egl_supports_fences(struct virgl_egl *egl);
@@ -99,6 +105,12 @@ const char *virgl_egl_error_string(EGLint error);
 bool virgl_egl_win32_create_d3d11_texture2d(struct virgl_egl *egl,
                                             const D3D11_TEXTURE2D_DESC *desc, ID3D11Texture2D **tex);
 EGLImageKHR virgl_egl_win32_image_from_d3d11_texture2d(struct virgl_egl *egl, ID3D11Texture2D *tex);
+#endif
+
+#ifdef ENABLE_METAL
+bool virgl_egl_metal_create_texture(struct virgl_egl *egl, struct pipe_resource *res,
+                                    uint32_t format, MTLTexture_id *tex);
+EGLImageKHR virgl_egl_metal_image_from_texture(struct virgl_egl *egl, MTLTexture_id tex);
 #endif
 
 #endif

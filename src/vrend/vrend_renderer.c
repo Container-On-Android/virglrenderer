@@ -401,7 +401,7 @@ struct global_renderer_state {
 #ifdef HAVE_EPOXY_EGL_H
    bool use_egl_fence : 1;
 #endif
-   bool d3d_share_texture : 1;
+   bool native_share_texture : 1;
    bool gbm_layout_feat : 1;
 };
 
@@ -3716,7 +3716,7 @@ void vrend_set_single_sampler_view(struct vrend_context *ctx,
                glTexParameteri(view->texture->target, GL_TEXTURE_BASE_LEVEL, view->u.tex.first_level);
                tex->cur_base = view->u.tex.first_level;
             }
-            if (tex->cur_max != view->u.tex.last_level) {
+            if (view->u.tex.last_level && tex->cur_max != view->u.tex.last_level) {
                glTexParameteri(view->texture->target, GL_TEXTURE_MAX_LEVEL, view->u.tex.last_level);
                tex->cur_max = view->u.tex.last_level;
             }
@@ -7764,7 +7764,7 @@ int vrend_renderer_init(const struct vrend_if_cbs *cbs, uint32_t flags)
    }
 #endif
 
-   vrend_state.d3d_share_texture = flags & VREND_D3D11_SHARE_TEXTURE;
+   vrend_state.native_share_texture = flags & VREND_NATIVE_SHARE_TEXTURE;
 
    vrend_state.gbm_layout_feat = vrend_use_gbm_layout_feature(flags);
 
@@ -8541,7 +8541,7 @@ static void vrend_resource_d3d_init(UNUSED struct vrend_resource *gr, UNUSED uin
    };
    ID3D11Texture2D* d3d_tex2d = NULL;
 
-   if (!vrend_state.d3d_share_texture)
+   if (!vrend_state.native_share_texture)
       return;
 
    if ((gr->base.bind & VIRGL_RES_BIND_SCANOUT) == 0)
@@ -8570,7 +8570,7 @@ static void vrend_resource_d3d_init(UNUSED struct vrend_resource *gr, UNUSED uin
 
    gr->d3d_tex2d = d3d_tex2d;
 
-   gr->storage_bits |= VREND_STORAGE_D3D_TEXTURE;
+   gr->storage_bits |= VREND_STORAGE_NATIVE_TEXTURE;
    gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
    return;
 
@@ -8578,6 +8578,44 @@ fail:
    if (d3d_tex2d)
       d3d_tex2d->lpVtbl->Release(gr->d3d_tex2d);
    gr->d3d_tex2d = NULL;
+#endif
+}
+
+/*
+ * When using ANGLE/Metal, this function creates a Metal Texture and
+ * EGL image given certain flags.
+ */
+static void vrend_resource_metal_init(UNUSED struct vrend_resource *gr, UNUSED uint32_t format)
+{
+#if defined(ENABLE_METAL) && defined(HAVE_EPOXY_EGL_H)
+   MTLTexture_id tex = NULL;
+
+   if (!vrend_state.native_share_texture)
+      return;
+
+   if ((gr->base.bind & VIRGL_RES_BIND_SCANOUT) == 0)
+      return;
+
+   if (gr->base.depth0 != 1 || gr->base.last_level != 0 || gr->base.nr_samples > 1)
+      return;
+
+   if (!virgl_egl_metal_create_texture(egl, &gr->base, format, &tex))
+      goto fail;
+
+   gr->egl_image = virgl_egl_metal_image_from_texture(egl, tex);
+   if (!gr->egl_image)
+      goto fail;
+
+   gr->metal_texture = tex;
+
+   gr->storage_bits |= VREND_STORAGE_NATIVE_TEXTURE;
+   gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
+   return;
+
+fail:
+   if (tex)
+      virgl_metal_release_texture(gr->metal_texture);
+   gr->metal_texture = NULL;
 #endif
 }
 
@@ -8670,6 +8708,7 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
 
    if (!image_oes) {
       vrend_resource_d3d_init(gr, format);
+      vrend_resource_metal_init(gr, format);
       vrend_resource_gbm_init(gr, format);
       if (gr->gbm_bo && !has_bit(gr->storage_bits, VREND_STORAGE_EGL_IMAGE))
          return 0;
@@ -8821,7 +8860,9 @@ static int vrend_resource_alloc_texture(struct vrend_resource *gr,
 
    if (!format_can_texture_storage) {
       glTexParameteri(gr->target, GL_TEXTURE_BASE_LEVEL, 0);
-      glTexParameteri(gr->target, GL_TEXTURE_MAX_LEVEL, pr->last_level);
+      if (pr->last_level) {
+         glTexParameteri(gr->target, GL_TEXTURE_MAX_LEVEL, pr->last_level);
+      }
    }
 
    glBindTexture(gr->target, 0);
@@ -8919,7 +8960,7 @@ void vrend_renderer_resource_destroy(struct vrend_resource *res)
       glDeleteMemoryObjectsEXT(1, &res->memobj);
    }
 
-#ifdef ENABLE_GBM
+#if defined(ENABLE_GBM) || defined(ENABLE_METAL)
    if (res->egl_image) {
       virgl_egl_image_destroy(egl, res->egl_image);
       for (unsigned i = 0; i < ARRAY_SIZE(res->aux_plane_egl_image); i++) {
@@ -8936,6 +8977,10 @@ void vrend_renderer_resource_destroy(struct vrend_resource *res)
 #ifdef WIN32
    if (res->d3d_tex2d)
       res->d3d_tex2d->lpVtbl->Release(res->d3d_tex2d);
+#endif
+#ifdef ENABLE_METAL
+   if (res->metal_texture)
+      virgl_metal_release_texture(res->metal_texture);
 #endif
    free(res);
 }
@@ -13109,26 +13154,34 @@ void vrend_renderer_resource_get_info(struct pipe_resource *pres,
    info->stride = util_format_get_nblocksx(res->base.format, u_minify(res->base.width0, 0)) * elsize;
 }
 
-int
-vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres, void **d3d_tex2d)
+void *
+vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *pres)
 {
 #ifdef WIN32
    struct vrend_resource *res = (struct vrend_resource *)pres;
 
-   if (!vrend_state.d3d_share_texture)
-      return 0;
-
-   if (!res->d3d_tex2d)
-      return EINVAL;
-
-   *d3d_tex2d = res->d3d_tex2d;
-   return 0;
+   if (!vrend_state.native_share_texture)
+      return NULL;
+   else
+      return res->d3d_tex2d;
 #else
    (void)pres;
-   (void)d3d_tex2d;
-   return ENOTSUP;
+   return NULL;
 #endif
 }
+
+#ifdef ENABLE_METAL
+MTLTexture_id
+vrend_renderer_resource_metal_texture(struct pipe_resource *pres)
+{
+   struct vrend_resource *res = (struct vrend_resource *)pres;
+
+   if (!vrend_state.native_share_texture)
+      return NULL;
+   else
+      return res->metal_texture;
+}
+#endif
 
 void vrend_renderer_get_cap_set(uint32_t cap_set, uint32_t *max_ver,
                                 uint32_t *max_size)
@@ -13389,9 +13442,6 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
       };
       struct vrend_resource *gr;
 
-      if (res->fd_type != VIRGL_RESOURCE_FD_DMABUF)
-         return EINVAL;
-
       gr = vrend_resource_create(&create_args);
       if (!gr)
          return ENOMEM;
@@ -13399,6 +13449,10 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
 #ifdef HAVE_EPOXY_EGL_H
       if (egl) {
 #ifdef ENABLE_GBM
+         if (res->fd_type != VIRGL_RESOURCE_FD_DMABUF) {
+            FREE(gr);
+            return EINVAL;
+         }
          int plane_fds[VIRGL_GBM_MAX_PLANES];
          uint32_t virgl_format;
          uint32_t drm_format;
@@ -13439,7 +13493,53 @@ vrend_renderer_pipe_resource_set_type(struct vrend_context *ctx,
             return ret;
          }
 
-#else /* ENABLE_GBM */
+#elif defined(ENABLE_METAL)
+         int ret;
+
+         if (res->fd_type != VIRGL_RESOURCE_METAL_BUFFER) {
+            FREE(gr);
+            return EINVAL;
+         }
+         if (args->plane_count > 1) {
+            virgl_warn("%s: ignoring plane_count = %d and using the first one\n",
+                       __func__, args->plane_count);
+         }
+         const struct vrend_metal_texture_description desc = {
+            .width = args->width,
+            .height = args->height,
+            .stride = args->plane_strides[0],
+            .offset = args->plane_offsets[0],
+            .bind = args->bind,
+            .usage = args->usage,
+            .format = args->format,
+         };
+         MTLTexture_id texture;
+         
+         if (!virgl_metal_create_texture_from_buffer(res->metal_buffer,
+                                                     &desc,
+                                                     &texture)) {
+            FREE(gr);
+            virgl_error("%s: failed to create texture from MTLBuffer\n", __func__);
+            return EINVAL;
+         }
+         gr->egl_image = virgl_egl_metal_image_from_texture(egl, texture);
+         virgl_metal_release_texture(texture);
+         if (!gr->egl_image) {
+            virgl_error("%s: failed to create egl image\n", __func__);
+            FREE(gr);
+            return EINVAL;
+         }
+
+         gr->storage_bits |= VREND_STORAGE_EGL_IMAGE;
+         gr->is_imported = true;
+
+         ret = vrend_resource_alloc_texture(gr, args->format, gr->egl_image);
+         if (ret) {
+            virgl_egl_image_destroy(egl, gr->egl_image);
+            FREE(gr);
+            return ret;
+         }
+#else /* !ENABLE_METAL && !ENABLE_GBM */
          FREE(gr);
          virgl_error("%s: no EGL/GBM support \n", __func__);
          return EINVAL;

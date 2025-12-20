@@ -9,9 +9,36 @@
 #include "vkr_physical_device.h"
 
 static void
+vkr_buffer_fix_create_info(struct vkr_device *dev,
+                           VkBufferCreateInfo *pCreateInfo)
+{
+   VkExternalMemoryBufferCreateInfo *ext_create_info;
+
+   ext_create_info = vkr_find_struct(
+            pCreateInfo, VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO);
+   if (ext_create_info) {
+      /* strip out dmabuf */
+      if ((ext_create_info->handleTypes & VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT) != 0) {
+         ext_create_info->handleTypes &= ~VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+         /* add in supported handles */
+         if (dev->physical_device->is_metal_export_supported) {
+            ext_create_info->handleTypes |= VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
+         }
+      }
+   }
+}
+
+static void
 vkr_dispatch_vkCreateBuffer(struct vn_dispatch_context *dispatch,
                             struct vn_command_vkCreateBuffer *args)
 {
+   struct vkr_device *dev = vkr_device_from_handle(args->device);
+
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_buffer_fix_create_info(dev, (VkBufferCreateInfo *)args->pCreateInfo);
+   }
+
    /* XXX If VkExternalMemoryBufferCreateInfo is chained by the app, all is
     * good.  If it is not chained, we might still bind an external memory to
     * the buffer, because vkr_dispatch_vkAllocateMemory makes any HOST_VISIBLE
@@ -138,6 +165,11 @@ vkr_dispatch_vkGetDeviceBufferMemoryRequirements(
 {
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
+
+   /* if host does not natively support dmabuf we need to patch create info */
+   if (dev->physical_device->is_dma_buf_emulated) {
+      vkr_buffer_fix_create_info(dev, (VkBufferCreateInfo *)args->pInfo->pCreateInfo);
+   }
 
    vn_replace_vkGetDeviceBufferMemoryRequirements_args_handle(args);
    vk->GetDeviceBufferMemoryRequirements(args->device, args->pInfo,

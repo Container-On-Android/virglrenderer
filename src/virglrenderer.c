@@ -46,6 +46,10 @@
 #include "vrend/vrend_renderer.h"
 #include "vrend/vrend_winsys.h"
 
+#ifdef ENABLE_METAL
+#include "vrend/vrend_metal.h"
+#endif
+
 #ifndef WIN32
 #include "util/libsync.h"
 #endif
@@ -482,7 +486,8 @@ void virgl_renderer_ctx_detach_resource(int ctx_id, int res_handle)
 
 static int virgl_renderer_resource_get_info_common(int res_handle,
                                                    struct virgl_renderer_resource_info *info,
-                                                   UNUSED void **d3d_tex2d)
+                                                   enum virgl_renderer_native_handle_type *type,
+                                                   virgl_renderer_native_handle *handle)
 {
    int ret = 0;
 
@@ -504,8 +509,19 @@ static int virgl_renderer_resource_get_info_common(int res_handle,
                                     (struct vrend_renderer_resource_info *)info);
 
 #ifdef WIN32
-   if (d3d_tex2d)
-      ret = vrend_renderer_resource_d3d11_texture2d(res->pipe_resource, d3d_tex2d);
+   if (type && handle) {
+      *handle = vrend_renderer_resource_d3d11_texture2d(res->pipe_resource);
+      if (*handle) {
+         *type = VIRGL_NATIVE_HANDLE_D3D_TEX2D;
+      }
+   }
+#elif defined(ENABLE_METAL)
+   if (type && handle) {
+      *handle = vrend_renderer_resource_metal_texture(res->pipe_resource);
+      if (*handle) {
+         *type = VIRGL_NATIVE_HANDLE_METAL_TEXTURE;
+      }
+   }
 #endif
 
    return ret;
@@ -517,7 +533,7 @@ int virgl_renderer_resource_get_info(int res_handle,
    TRACE_FUNC();
    int ret;
 
-   if ((ret = virgl_renderer_resource_get_info_common(res_handle, info, NULL)) != 0)
+   if ((ret = virgl_renderer_resource_get_info_common(res_handle, info, NULL, NULL)) != 0)
        return ret;
 
    if (state.winsys_initialized) {
@@ -540,7 +556,8 @@ int virgl_renderer_resource_get_info_ext(int res_handle,
 
    if ((ret = virgl_renderer_resource_get_info_common(res_handle,
                                                       &info_ext->base,
-                                                      &info_ext->d3d_tex2d)) != 0)
+                                                      &info_ext->native_type,
+                                                      &info_ext->native_handle)) != 0)
       return ret;
 
    info_ext->version = VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION;
@@ -911,8 +928,8 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
          renderer_flags |= VREND_USE_EXTERNAL_BLOB;
       if (flags & VIRGL_RENDERER_USE_VIDEO)
          renderer_flags |= VREND_USE_VIDEO;
-      if (flags & VIRGL_RENDERER_D3D11_SHARE_TEXTURE)
-         renderer_flags |= VREND_D3D11_SHARE_TEXTURE;
+      if (flags & VIRGL_RENDERER_NATIVE_SHARE_TEXTURE)
+         renderer_flags |= VREND_NATIVE_SHARE_TEXTURE;
       if (flags & VIRGL_RENDERER_COMPAT_PROFILE)
          renderer_flags |= VREND_USE_COMPAT_CONTEXT;
       if (flags & VIRGL_RENDERER_USE_GLES)
@@ -928,7 +945,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       state.vrend_initialized = true;
    }
 
-   if (!state.proxy_initialized && (flags & VIRGL_RENDERER_RENDER_SERVER)) {
+   if (!state.proxy_initialized) {
       ret = proxy_renderer_init(&proxy_cbs, flags | VIRGL_RENDERER_NO_VIRGL);
       if (ret) {
          virgl_error("failed to initialize venus renderer");
@@ -1203,6 +1220,10 @@ int virgl_renderer_resource_create_blob(const struct virgl_renderer_resource_cre
       res = virgl_resource_create_from_opaque_handle(ctx, args->res_handle, blob.u.opaque_handle);
       if (!res)
          return -ENOMEM;
+   } else if (blob.type == VIRGL_RESOURCE_METAL_BUFFER) {
+      res = virgl_resource_create_from_metal_buffer(ctx, args->res_handle, blob.u.metal_buffer, &blob.vulkan_info);
+      if (!res)
+         return -ENOMEM;
    } else if (blob.type != VIRGL_RESOURCE_FD_INVALID) {
       res = virgl_resource_create_from_fd(args->res_handle,
                                           blob.type,
@@ -1267,6 +1288,7 @@ int virgl_renderer_resource_map(uint32_t res_handle, void **out_map, uint64_t *o
          map_size = res->map_size;
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
          ret = vkr_allocator_resource_map(res, &map, &map_size);
          break;
       case VIRGL_RESOURCE_OPAQUE_HANDLE:
@@ -1327,6 +1349,7 @@ int virgl_renderer_resource_map_fixed(uint32_t res_handle, void *addr)
                                  MAP_FIXED | MAP_SHARED);
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
       case VIRGL_RESOURCE_FD_INVALID:
          /* Avoid a default case so that -Wswitch will tell us at compile time
           * if a new virgl resource type is added without being handled here.
@@ -1365,6 +1388,7 @@ int virgl_renderer_resource_unmap(uint32_t res_handle)
          ret = munmap(res->mapped, res->map_size);
          break;
       case VIRGL_RESOURCE_FD_OPAQUE:
+      case VIRGL_RESOURCE_METAL_BUFFER:
          ret = vkr_allocator_resource_unmap(res);
          break;
       case VIRGL_RESOURCE_FD_INVALID:
@@ -1415,6 +1439,7 @@ virgl_renderer_resource_export_blob(uint32_t res_id, uint32_t *fd_type, int *fd)
       *fd_type = VIRGL_RENDERER_BLOB_FD_TYPE_SHM;
       break;
    case VIRGL_RESOURCE_OPAQUE_HANDLE:
+   case VIRGL_RESOURCE_METAL_BUFFER:
    case VIRGL_RESOURCE_FD_INVALID:
       /* Avoid a default case so that -Wswitch will tell us at compile time if a
        * new virgl resource type is added without being handled here.
@@ -1480,6 +1505,60 @@ virgl_renderer_resource_import_blob(const struct virgl_renderer_resource_import_
    res->map_size = args->size;
 
    return 0;
+}
+
+enum virgl_renderer_native_handle_type
+virgl_renderer_create_handle_for_scanout(uint32_t res_id,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         uint32_t virgl_format,
+                                         uint32_t padding,
+                                         uint32_t stride,
+                                         uint32_t offset,
+                                         virgl_renderer_native_handle *handle)
+{
+   TRACE_FUNC();
+#ifdef ENABLE_METAL
+   struct virgl_resource *res = virgl_resource_lookup(res_id);
+
+   if (!res)
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   if (res->fd_type != VIRGL_RESOURCE_METAL_BUFFER)
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   struct vrend_metal_texture_description desc = {
+      .width = width,
+      .height = height,
+      .stride = stride,
+      .offset = offset,
+      .usage = PIPE_USAGE_IMMUTABLE,
+      .format = virgl_format,
+   };
+   MTLTexture_id tex;
+
+   if (!virgl_metal_create_texture_from_buffer(res->metal_buffer,
+                                               &desc,
+                                               &tex))
+      return VIRGL_NATIVE_HANDLE_NONE;
+
+   *handle = tex;
+   return VIRGL_NATIVE_HANDLE_METAL_TEXTURE;
+#else /* !ENABLE_METAL */
+   return VIRGL_NATIVE_HANDLE_NONE;
+#endif
+}
+
+void
+virgl_renderer_release_handle_for_scanout(enum virgl_renderer_native_handle_type type,
+                                          virgl_renderer_native_handle handle)
+{
+   TRACE_FUNC();
+#ifdef ENABLE_METAL
+   if (type == VIRGL_NATIVE_HANDLE_METAL_TEXTURE) {
+      virgl_metal_release_texture(handle);
+   }
+#endif
 }
 
 int

@@ -177,6 +177,7 @@ vkr_renderer_create_resource(uint32_t ctx_id,
                              uint32_t blob_flags,
                              enum virgl_resource_fd_type *out_fd_type,
                              int *out_res_fd,
+                             void **out_res_ptr,
                              uint32_t *out_map_info,
                              struct virgl_resource_vulkan_info *out_vulkan_info)
 {
@@ -194,13 +195,17 @@ vkr_renderer_create_resource(uint32_t ctx_id,
       return false;
 
    assert(blob.type == VIRGL_RESOURCE_FD_SHM || blob.type == VIRGL_RESOURCE_FD_DMABUF ||
-          blob.type == VIRGL_RESOURCE_FD_OPAQUE);
+          blob.type == VIRGL_RESOURCE_FD_OPAQUE || blob.type == VIRGL_RESOURCE_METAL_BUFFER);
 
    *out_fd_type = blob.type;
-   *out_res_fd = blob.u.fd;
+   if (blob.type == VIRGL_RESOURCE_METAL_BUFFER) {
+      *out_res_ptr = blob.u.metal_buffer;
+   } else {
+      *out_res_fd = blob.u.fd;
+   }
    *out_map_info = blob.map_info;
 
-   if (blob.type == VIRGL_RESOURCE_FD_OPAQUE) {
+   if (blob.type == VIRGL_RESOURCE_FD_OPAQUE || blob.type == VIRGL_RESOURCE_METAL_BUFFER) {
       assert(out_vulkan_info);
       *out_vulkan_info = blob.vulkan_info;
    }
