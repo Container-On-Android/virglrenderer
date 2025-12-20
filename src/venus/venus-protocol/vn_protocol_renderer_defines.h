@@ -465,7 +465,9 @@ typedef enum VkCommandTypeEXT {
     VK_COMMAND_TYPE_vkCmdSetAttachmentFeedbackLoopEnableEXT_EXT = 329,
     VK_COMMAND_TYPE_vkCmdSetDepthClampRangeEXT_EXT = 330,
     VK_COMMAND_TYPE_vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR_EXT = 331,
+    VK_COMMAND_TYPE_vkGetMemoryMetalHandleEXT_EXT = 331,
     VK_COMMAND_TYPE_vkCmdDrawMeshTasksEXT_EXT = 332,
+    VK_COMMAND_TYPE_vkGetMemoryMetalHandlePropertiesEXT_EXT = 332,
     VK_COMMAND_TYPE_vkCmdDrawMeshTasksIndirectEXT_EXT = 333,
     VK_COMMAND_TYPE_vkCmdDrawMeshTasksIndirectCountEXT_EXT = 334,
 } VkCommandTypeEXT;
@@ -2869,6 +2871,23 @@ struct vn_command_vkCmdSetDepthClampRangeEXT {
     const VkDepthClampRangeEXT* pDepthClampRange;
 };
 
+struct vn_command_vkGetMemoryMetalHandleEXT {
+    VkDevice device;
+    const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo;
+    void** pHandle;
+
+    VkResult ret;
+};
+
+struct vn_command_vkGetMemoryMetalHandlePropertiesEXT {
+    VkDevice device;
+    VkExternalMemoryHandleTypeFlagBits handleType;
+    const void* pHandle;
+    VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties;
+
+    VkResult ret;
+};
+
 struct vn_command_vkSetReplyCommandStreamMESA {
     const VkCommandStreamDescriptionMESA* pStream;
 };
@@ -3285,6 +3304,8 @@ struct vn_dispatch_context {
     void (*dispatch_vkCmdSetRenderingAttachmentLocations)(struct vn_dispatch_context *ctx, struct vn_command_vkCmdSetRenderingAttachmentLocations *args);
     void (*dispatch_vkCmdSetRenderingInputAttachmentIndices)(struct vn_dispatch_context *ctx, struct vn_command_vkCmdSetRenderingInputAttachmentIndices *args);
     void (*dispatch_vkCmdSetDepthClampRangeEXT)(struct vn_dispatch_context *ctx, struct vn_command_vkCmdSetDepthClampRangeEXT *args);
+    void (*dispatch_vkGetMemoryMetalHandleEXT)(struct vn_dispatch_context *ctx, struct vn_command_vkGetMemoryMetalHandleEXT *args);
+    void (*dispatch_vkGetMemoryMetalHandlePropertiesEXT)(struct vn_dispatch_context *ctx, struct vn_command_vkGetMemoryMetalHandlePropertiesEXT *args);
     void (*dispatch_vkSetReplyCommandStreamMESA)(struct vn_dispatch_context *ctx, struct vn_command_vkSetReplyCommandStreamMESA *args);
     void (*dispatch_vkSeekReplyCommandStreamMESA)(struct vn_dispatch_context *ctx, struct vn_command_vkSeekReplyCommandStreamMESA *args);
     void (*dispatch_vkExecuteCommandStreamsMESA)(struct vn_dispatch_context *ctx, struct vn_command_vkExecuteCommandStreamsMESA *args);

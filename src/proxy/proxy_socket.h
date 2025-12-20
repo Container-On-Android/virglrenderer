@@ -10,6 +10,7 @@
 
 struct proxy_socket {
    int fd;
+   bool is_seqpacket;
 };
 
 bool

@@ -29,6 +29,8 @@ struct vkr_resource {
       int fd;
       /* valid when fd_type is shm */
       uint8_t *data;
+      /* valid when fd_type is metal buffer */
+      MTLResource_id metal_buffer;
    } u;
 
    size_t size;

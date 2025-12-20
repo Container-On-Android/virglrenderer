@@ -108,16 +108,28 @@ render_context_dispatch_create_resource(struct render_context *ctx,
    struct render_context_op_create_resource_reply reply = {
       .fd_type = VIRGL_RESOURCE_FD_INVALID,
    };
-   int res_fd;
+   int res_fd = -1;
    bool ok = render_state_create_resource(ctx->ctx_id, req->res_id, req->blob_id,
                                           req->blob_size, req->blob_flags, &reply.fd_type,
-                                          &res_fd, &reply.map_info, &reply.vulkan_info);
+                                          &res_fd, &reply.res_ptr, &reply.map_info,
+                                          &reply.vulkan_info);
    if (!ok)
       return render_socket_send_reply(&ctx->socket, &reply, sizeof(reply));
 
-   ok =
-      render_socket_send_reply_with_fds(&ctx->socket, &reply, sizeof(reply), &res_fd, 1);
-   close(res_fd);
+   if (res_fd >= 0) {
+      ok =
+         render_socket_send_reply_with_fds(&ctx->socket, &reply, sizeof(reply), &res_fd, 1);
+      close(res_fd);
+   } else {
+      if (!ctx->in_process) {
+         /* not in_process, cannot send pointers */
+         render_log("cannot send pointer for resource %d", req->res_id);
+         render_state_destroy_resource(ctx->ctx_id, req->res_id);
+         reply.fd_type = VIRGL_RESOURCE_FD_INVALID;
+         reply.res_ptr = NULL;
+      }
+      ok = render_socket_send_reply(&ctx->socket, &reply, sizeof(reply));
+   }
 
    return ok;
 }
@@ -343,6 +355,7 @@ render_context_init(struct render_context *ctx, const struct render_context_args
    render_socket_init(&ctx->socket, args->ctx_fd);
    ctx->shmem_fd = -1;
    ctx->fence_eventfd = -1;
+   ctx->in_process = args->in_process;
 
    if (!render_context_init_name(ctx, args->ctx_id, args->ctx_name))
       return false;

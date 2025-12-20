@@ -25,12 +25,15 @@ struct render_context {
 
    int timeline_count;
 
+   bool in_process;
+
    /* optional */
    int fence_eventfd;
 };
 
 struct render_context_args {
    bool valid;
+   bool in_process;
 
    uint32_t init_flags;
 

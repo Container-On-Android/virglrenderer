@@ -36,6 +36,13 @@
 #include "virgl_util.h"
 #include "virgl_context.h"
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#else
+#define CFRetain(x) (x)
+#define CFRelease(x)
+#endif
+
 static struct util_hash_table *virgl_resource_table;
 static struct virgl_resource_pipe_callbacks pipe_callbacks;
 
@@ -46,7 +53,9 @@ virgl_resource_destroy_func(void *val)
 
    if (res->pipe_resource)
       pipe_callbacks.unref(res->pipe_resource, pipe_callbacks.data);
-   if ((res->fd_type != VIRGL_RESOURCE_FD_INVALID) &&
+   if (res->fd_type == VIRGL_RESOURCE_METAL_BUFFER)
+      CFRelease(res->metal_buffer);
+   else if ((res->fd_type != VIRGL_RESOURCE_FD_INVALID) &&
        (res->fd_type != VIRGL_RESOURCE_OPAQUE_HANDLE))
       close(res->fd);
 
@@ -206,6 +215,25 @@ virgl_resource_create_from_iov(uint32_t res_id,
    return res;
 }
 
+struct virgl_resource *
+virgl_resource_create_from_metal_buffer(UNUSED struct virgl_context *ctx,
+                                        uint32_t res_id,
+                                        void *metal_buffer,
+                                        const struct virgl_resource_vulkan_info *vulkan_info)
+{
+   struct virgl_resource *res;
+
+   res = virgl_resource_create(res_id);
+   if (!res)
+      return NULL;
+
+   res->fd_type = VIRGL_RESOURCE_METAL_BUFFER;
+   res->metal_buffer = (void *)CFRetain(metal_buffer);
+   res->vulkan_info = *vulkan_info;
+
+   return res;
+}
+
 void
 virgl_resource_remove(uint32_t res_id)
 {
@@ -263,6 +291,8 @@ virgl_resource_export_fd(struct virgl_resource *res, int *fd)
          return VIRGL_RESOURCE_FD_INVALID;
 
       return ctx->export_opaque_handle(ctx, res, fd);
+   } else if (res->fd_type == VIRGL_RESOURCE_METAL_BUFFER) {
+      return VIRGL_RESOURCE_FD_INVALID;
    } else if (res->fd_type != VIRGL_RESOURCE_FD_INVALID) {
       *fd = os_dupfd_cloexec(res->fd);
       return *fd >= 0 ? res->fd_type : VIRGL_RESOURCE_FD_INVALID;

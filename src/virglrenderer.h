@@ -163,7 +163,9 @@ struct virgl_renderer_callbacks {
 #endif /* VIRGL_RENDERER_UNSTABLE_APIS */
 
 
-#define VIRGL_RENDERER_D3D11_SHARE_TEXTURE (1 << 12)
+#define VIRGL_RENDERER_NATIVE_SHARE_TEXTURE (1 << 12)
+/* Compatibility with older versions */
+#define VIRGL_RENDERER_D3D11_SHARE_TEXTURE (VIRGL_RENDERER_NATIVE_SHARE_TEXTURE)
 #define VIRGL_RENDERER_COMPAT_PROFILE (1 << 13)
 
 /* Blob allocations must be done by guest from dedicated heap (Host visible memory). */
@@ -363,7 +365,23 @@ struct virgl_renderer_resource_info {
    int fd;
 };
 
-#define VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION 0
+#define VIRGL_RENDERER_RESOURCE_INFO_EXT_VERSION 1
+
+/**
+ * Describes a handle type used in the native graphics API
+ */
+enum virgl_renderer_native_handle_type {
+   VIRGL_NATIVE_HANDLE_NONE,
+   /* handle is a valid pointer to a ID3D11Texture2D */
+   VIRGL_NATIVE_HANDLE_D3D_TEX2D,
+   /* handle is a valid pointer to a MTLTexture */
+   VIRGL_NATIVE_HANDLE_METAL_TEXTURE,
+};
+
+/**
+ * The actual type is determined by `virgl_renderer_native_handle_type`
+ */
+typedef void *virgl_renderer_native_handle;
 
 struct virgl_renderer_resource_info_ext {
    int version;
@@ -371,7 +389,12 @@ struct virgl_renderer_resource_info_ext {
    bool has_dmabuf_export;
    int planes;
    uint64_t modifiers;
-   void *d3d_tex2d;
+   union {
+      /* this is for backwards compatibility */
+      void *d3d_tex2d;
+      virgl_renderer_native_handle native_handle;
+   };
+   enum virgl_renderer_native_handle_type native_type;
 };
 
 VIRGL_EXPORT int virgl_renderer_resource_get_info(int res_handle,
@@ -509,6 +532,38 @@ virgl_renderer_submit_cmd2(void *buffer,
                            int ndw,
                            uint64_t *in_fence_ids,
                            uint32_t num_in_fences);
+
+/**
+ * Blob resources are untyped but we may wish to create a native texture handle
+ * for scanout. Not all blobs support exporting to a file-descriptor so this
+ * can be used even in cases where `virgl_renderer_resource_export_blob` is not
+ * supported.
+ * 
+ * The user should assume the returned handle is immutable.
+ * 
+ * If a handle cannot be created, `VIRGL_RESOURCE_NATIVE_TYPE_NONE` will be
+ * returned.
+ * 
+ * If the return value is not `VIRGL_RESOURCE_NATIVE_TYPE_NONE`, the user MUST
+ * call `virgl_renderer_release_handle_for_scanout` with the returned handle
+ * and type when they are done using it. Otherwise, memory will be leaked.
+ */
+VIRGL_EXPORT enum virgl_renderer_native_handle_type
+virgl_renderer_create_handle_for_scanout(uint32_t res_id,
+                                         uint32_t width,
+                                         uint32_t height,
+                                         uint32_t virgl_format,
+                                         uint32_t padding,
+                                         uint32_t stride,
+                                         uint32_t offset,
+                                         virgl_renderer_native_handle *handle);
+
+/**
+ * This frees a handle acquired from `virgl_renderer_create_handle_for_scanout`
+ */
+VIRGL_EXPORT void
+virgl_renderer_release_handle_for_scanout(enum virgl_renderer_native_handle_type type,
+                                          virgl_renderer_native_handle handle);
 
 /* vtest semi-private APIs: */
 VIRGL_EXPORT int virgl_renderer_attach_fence(int ctx_id, int fence_fd);

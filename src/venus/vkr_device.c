@@ -130,29 +130,36 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
    /* append extensions for our own use */
    const char **exts = NULL;
    uint32_t ext_count = args->pCreateInfo->enabledExtensionCount;
-   ext_count += physical_dev->KHR_external_memory_fd;
-   ext_count += physical_dev->EXT_external_memory_dma_buf;
-   ext_count += physical_dev->KHR_external_fence_fd;
-   if (ext_count > args->pCreateInfo->enabledExtensionCount) {
-      exts = malloc(sizeof(*exts) * ext_count);
-      if (!exts) {
-         args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
-         return;
-      }
-      for (uint32_t i = 0; i < args->pCreateInfo->enabledExtensionCount; i++)
-         exts[i] = args->pCreateInfo->ppEnabledExtensionNames[i];
-
-      ext_count = args->pCreateInfo->enabledExtensionCount;
-      if (physical_dev->KHR_external_memory_fd)
-         exts[ext_count++] = "VK_KHR_external_memory_fd";
-      if (physical_dev->EXT_external_memory_dma_buf)
-         exts[ext_count++] = "VK_EXT_external_memory_dma_buf";
-      if (physical_dev->KHR_external_fence_fd)
-         exts[ext_count++] = "VK_KHR_external_fence_fd";
-
-      ((VkDeviceCreateInfo *)args->pCreateInfo)->ppEnabledExtensionNames = exts;
-      ((VkDeviceCreateInfo *)args->pCreateInfo)->enabledExtensionCount = ext_count;
+   uint32_t add_count = 0;
+   add_count += physical_dev->KHR_external_memory_fd;
+   add_count += physical_dev->EXT_external_memory_dma_buf;
+   add_count += physical_dev->KHR_external_fence_fd;
+   add_count += physical_dev->EXT_external_memory_metal;
+   add_count += physical_dev->KHR_portability_subset;
+   exts = malloc(sizeof(*exts) * (ext_count + add_count));
+   if (!exts) {
+      args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
+      return;
    }
+
+   ext_count = 0;
+   for (uint32_t i = 0; i < args->pCreateInfo->enabledExtensionCount; i++) {
+      exts[ext_count++] = args->pCreateInfo->ppEnabledExtensionNames[i];
+   }
+
+   if (physical_dev->KHR_external_memory_fd)
+      exts[ext_count++] = VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME;
+   if (physical_dev->EXT_external_memory_dma_buf)
+      exts[ext_count++] = VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME;
+   if (physical_dev->KHR_external_fence_fd)
+      exts[ext_count++] = VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME;
+   if (physical_dev->EXT_external_memory_metal)
+      exts[ext_count++] = VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME;
+   if (physical_dev->KHR_portability_subset)
+      exts[ext_count++] = VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME;
+
+   ((VkDeviceCreateInfo *)args->pCreateInfo)->ppEnabledExtensionNames = exts;
+   ((VkDeviceCreateInfo *)args->pCreateInfo)->enabledExtensionCount = ext_count;
 
    struct vkr_device *dev =
       vkr_context_alloc_object(ctx, sizeof(*dev), VK_OBJECT_TYPE_DEVICE, args->pDevice);

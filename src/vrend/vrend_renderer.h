@@ -42,6 +42,9 @@
 #ifdef WIN32
 #include <d3d11.h>
 #endif
+#ifdef ENABLE_METAL
+#include "vrend_metal.h"
+#endif
 
 #ifdef ENABLE_TESTS
 /* With this flag set, the transfer will not try to use GBM mappings.
@@ -77,7 +80,7 @@ struct vrend_context;
 #define VREND_STORAGE_HOST_SYSTEM_MEMORY BIT(5)
 #define VREND_STORAGE_GL_IMMUTABLE       BIT(6)
 #define VREND_STORAGE_GL_MEMOBJ          BIT(7)
-#define VREND_STORAGE_D3D_TEXTURE        BIT(8)
+#define VREND_STORAGE_NATIVE_TEXTURE     BIT(8)
 
 struct vrend_resource {
    struct pipe_resource base;
@@ -106,6 +109,9 @@ struct vrend_resource {
    void *aux_plane_egl_image[VIRGL_GBM_MAX_PLANES];
 #ifdef WIN32
    ID3D11Texture2D *d3d_tex2d;
+#endif
+#ifdef ENABLE_METAL
+   MTLTexture_id metal_texture;
 #endif
 
    uint64_t size;
@@ -194,7 +200,7 @@ struct vrend_if_cbs {
 #define VREND_USE_EXTERNAL_BLOB (1 << 1)
 #define VREND_USE_ASYNC_FENCE_CB (1 << 2)
 #define VREND_USE_VIDEO          (1 << 3)
-#define VREND_D3D11_SHARE_TEXTURE (1 << 4)
+#define VREND_NATIVE_SHARE_TEXTURE (1 << 4)
 #define VREND_USE_COMPAT_CONTEXT (1 << 5)
 #define VREND_USE_GLES (1 << 6)
 #define VREND_USE_GBM_LAYOUT (1 << 7)
@@ -640,11 +646,16 @@ void vrend_context_emit_string_marker(struct vrend_context *ctx, GLsizei length,
 
 struct vrend_video_context *vrend_context_get_video_ctx(struct vrend_context *ctx);
 
-int
-vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *res, void **handle);
+void *
+vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *res);
 
 int
 vrend_renderer_pipe_resource_get_layout(struct vrend_context *ctx,
                                         uint32_t out_res_id, uint32_t res_id);
+
+#ifdef ENABLE_METAL
+MTLTexture_id
+vrend_renderer_resource_metal_texture(struct pipe_resource *pres);
+#endif
 
 #endif

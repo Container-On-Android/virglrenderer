@@ -50,6 +50,12 @@ enum virgl_resource_fd_type {
     */
    VIRGL_RESOURCE_OPAQUE_HANDLE,
 
+   /**
+    * A MTLBuffer resource represents an opaque buffer of memory that can
+    * be shared across CPU and GPU. It can be the backing storage for textures.
+    */
+   VIRGL_RESOURCE_METAL_BUFFER,
+
    VIRGL_RESOURCE_FD_INVALID = -1,
 };
 
@@ -93,6 +99,9 @@ struct virgl_resource {
     */
    uint32_t opaque_handle_context_id;
    uint32_t opaque_handle;
+
+   /* When fd_type == VIRGL_RESOURCE_METAL_BUFFER */
+   void *metal_buffer;
 
    const struct iovec *iov;
    int iov_count;
@@ -156,6 +165,12 @@ struct virgl_resource *
 virgl_resource_create_from_iov(uint32_t res_id,
                                const struct iovec *iov,
                                int iov_count);
+
+struct virgl_resource *
+virgl_resource_create_from_metal_buffer(struct virgl_context *ctx,
+                                        uint32_t res_id,
+                                        void *metal_buffer,
+                                        const struct virgl_resource_vulkan_info *vulkan_info);
 
 void
 virgl_resource_remove(uint32_t res_id);

@@ -44,4 +44,7 @@ vkr_library_unload(struct vulkan_library *lib)
 
 #endif /* ENABLE_VULKAN_DLOAD */
 
+bool
+vkr_library_has_portability_enumeration(PFN_vkEnumerateInstanceExtensionProperties enum_inst_ext_props);
+
 #endif /* VKR_LIBRARY_H */

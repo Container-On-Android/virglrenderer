@@ -300,6 +300,8 @@ struct vn_device_proc_table {
    PFN_vkGetImageSubresourceLayout2 GetImageSubresourceLayout2;
    PFN_vkGetMemoryFdKHR GetMemoryFdKHR;
    PFN_vkGetMemoryFdPropertiesKHR GetMemoryFdPropertiesKHR;
+   PFN_vkGetMemoryMetalHandleEXT GetMemoryMetalHandleEXT;
+   PFN_vkGetMemoryMetalHandlePropertiesEXT GetMemoryMetalHandlePropertiesEXT;
    PFN_vkGetPipelineCacheData GetPipelineCacheData;
    PFN_vkGetPrivateData GetPrivateData;
    PFN_vkGetQueryPoolResults GetQueryPoolResults;
@@ -1042,6 +1044,12 @@ vn_util_init_device_proc_table(VkDevice dev,
       NULL;
    proc_table->GetMemoryFdPropertiesKHR =
       ext_table->KHR_external_memory_fd ? VN_GDPA(dev, vkGetMemoryFdPropertiesKHR) :
+      NULL;
+   proc_table->GetMemoryMetalHandleEXT =
+      ext_table->EXT_external_memory_metal ? VN_GDPA(dev, vkGetMemoryMetalHandleEXT) :
+      NULL;
+   proc_table->GetMemoryMetalHandlePropertiesEXT =
+      ext_table->EXT_external_memory_metal ? VN_GDPA(dev, vkGetMemoryMetalHandlePropertiesEXT) :
       NULL;
    proc_table->GetPipelineCacheData = VN_GDPA(dev, vkGetPipelineCacheData);
    proc_table->GetPrivateData =

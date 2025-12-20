@@ -227,6 +227,16 @@ vkr_physical_device_init_memory_properties(struct vkr_physical_device *physical_
           VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT);
    }
 
+   if (physical_dev->EXT_external_memory_metal) {
+      info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT,
+      vk->GetPhysicalDeviceExternalBufferProperties(handle, &info, &props);
+      physical_dev->is_metal_export_supported =
+         (props.externalMemoryProperties.externalMemoryFeatures &
+          VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT) &&
+         (props.externalMemoryProperties.exportFromImportedHandleTypes &
+          VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT);
+   }
+
    /* fallback to gbm allocation with dma-buf import */
    if (!physical_dev->is_dma_buf_fd_export_supported &&
        !physical_dev->is_opaque_fd_export_supported &&
@@ -269,12 +279,21 @@ vkr_physical_device_init_extensions(struct vkr_physical_device *physical_dev)
    for (uint32_t i = 0; i < count; i++) {
       VkExtensionProperties *props = &exts[i];
 
-      if (!strcmp(props->extensionName, "VK_KHR_external_memory_fd"))
+      if (!strcmp(props->extensionName, VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME)) {
          physical_dev->KHR_external_memory_fd = true;
-      else if (!strcmp(props->extensionName, "VK_EXT_external_memory_dma_buf"))
+      } else if (!strcmp(props->extensionName, VK_EXT_EXTERNAL_MEMORY_DMA_BUF_EXTENSION_NAME)) {
          physical_dev->EXT_external_memory_dma_buf = true;
-      else if (!strcmp(props->extensionName, "VK_KHR_external_fence_fd"))
+      } else if (!strcmp(props->extensionName, VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME)) {
          physical_dev->KHR_external_fence_fd = true;
+      } else if (!strcmp(props->extensionName, VK_EXT_EXTERNAL_MEMORY_METAL_EXTENSION_NAME)) {
+         physical_dev->EXT_external_memory_metal = true;
+         /* hide from guest */
+         continue;
+      } else if (!strcmp(props->extensionName, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
+         physical_dev->KHR_portability_subset = true;
+         /* hide from guest */
+         continue;
+      }
 
       const uint32_t spec_ver = vkr_extension_get_spec_version(props->extensionName);
       if (spec_ver) {

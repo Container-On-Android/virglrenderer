@@ -367,7 +367,16 @@ proxy_context_get_blob(struct virgl_context *base,
       return -1;
    }
 
-   if (!reply_fd_count) {
+   if (reply.fd_type == VIRGL_RESOURCE_METAL_BUFFER) {
+      blob->type = reply.fd_type;
+      blob->u.metal_buffer = reply.res_ptr;
+      blob->map_info = reply.map_info;
+      blob->vulkan_info = reply.vulkan_info;
+
+      proxy_context_resource_add(ctx, res_id);
+
+      return 0;
+   } else if (!reply_fd_count) {
       proxy_log("invalid reply for blob %" PRIu64, blob_id);
       return -1;
    }
