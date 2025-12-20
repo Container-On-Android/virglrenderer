@@ -928,7 +928,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       state.vrend_initialized = true;
    }
 
-   if (!state.proxy_initialized && (flags & VIRGL_RENDERER_RENDER_SERVER)) {
+   if (!state.proxy_initialized) {
       ret = proxy_renderer_init(&proxy_cbs, flags | VIRGL_RENDERER_NO_VIRGL);
       if (ret) {
          virgl_error("failed to initialize venus renderer");

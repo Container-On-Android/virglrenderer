@@ -133,6 +133,16 @@ proxy_sources = [
    'proxy/proxy_socket.c',
 ]
 
+server_sources = [
+   '../server/render_client.c',
+   '../server/render_common.c',
+   '../server/render_context.c',
+   '../server/render_server.c',
+   '../server/render_socket.c',
+   '../server/render_state.c',
+   '../server/render_worker.c',
+]
+
 video_sources = [
    'vrend/virgl_video.c',
    'vrend/vrend_video.c',
@@ -199,6 +209,10 @@ endif
 
 if with_render_server
    virgl_sources += proxy_sources
+endif
+
+if with_render_server_worker == 'thread'
+   virgl_sources += server_sources
 endif
 
 if with_video

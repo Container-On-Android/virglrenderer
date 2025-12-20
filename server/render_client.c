@@ -76,13 +76,15 @@ static void
 init_context_args(struct render_context_args *ctx_args,
                   uint32_t init_flags,
                   const struct render_client_op_create_context_request *req,
-                  int ctx_fd)
+                  int ctx_fd,
+                  bool in_process)
 {
    *ctx_args = (struct render_context_args){
       .valid = true,
       .init_flags = init_flags,
       .ctx_id = req->ctx_id,
       .ctx_fd = ctx_fd,
+      .in_process = in_process,
    };
 
    static_assert(sizeof(ctx_args->ctx_name) == sizeof(req->ctx_name), "");
@@ -123,7 +125,8 @@ render_client_create_context(struct render_client *client,
    int remote_fd = socket_fds[1];
 
    struct render_context_args ctx_args;
-   init_context_args(&ctx_args, client->init_flags, req, ctx_fd);
+   bool in_process = srv->context_args->in_process;
+   init_context_args(&ctx_args, client->init_flags, req, ctx_fd, in_process);
 
 #ifdef ENABLE_RENDER_SERVER_WORKER_THREAD
    rec->worker = render_worker_create(srv->worker_jail, render_client_worker_thread,

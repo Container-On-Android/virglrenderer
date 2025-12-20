@@ -55,11 +55,6 @@ proxy_client_create_context(struct proxy_client *client,
       return false;
    }
 
-   if (!proxy_socket_is_seqpacket(ctx_fd)) {
-      close(ctx_fd);
-      return false;
-   }
-
    *out_ctx_fd = ctx_fd;
    return true;
 }

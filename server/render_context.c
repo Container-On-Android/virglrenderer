@@ -343,6 +343,7 @@ render_context_init(struct render_context *ctx, const struct render_context_args
    render_socket_init(&ctx->socket, args->ctx_fd);
    ctx->shmem_fd = -1;
    ctx->fence_eventfd = -1;
+   ctx->in_process = args->in_process;
 
    if (!render_context_init_name(ctx, args->ctx_id, args->ctx_name))
       return false;
