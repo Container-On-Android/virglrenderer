@@ -84,7 +84,7 @@ streq_nocase_uprcase(const char *str1,
 static inline bool skip_n_chars(const char **pcur,
                                    int n)
 {
-   char* str = memchr(*pcur, '\0', n);
+   const char* str = (const char*)memchr(*pcur, '\0', (size_t)n);
    if (unlikely(str)) {
       *pcur = str;
       return false;
