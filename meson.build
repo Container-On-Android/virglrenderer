@@ -95,6 +95,12 @@ conf_data.set('VIRGL_RENDERER_UNSTABLE_APIS', 1)
 
 drm_renderers = get_option('drm-renderers')
 
+with_rocm = get_option('rocm-experimental')
+if with_rocm
+  conf_data.set('ENABLE_ROCM', 1)
+  drm_renderers += 'amdgpu-experimental'
+endif
+
 with_drm_msm = drm_renderers.contains('msm')
 if with_drm_msm
   conf_data.set('ENABLE_DRM_MSM', 1)
@@ -124,6 +130,9 @@ drm_uapi_dep = declare_dependency(
 )
 
 pkg_cflags = []
+
+libhsakmt_dep = dependency('libhsakmt', version: '>=1.0.6', required: with_rocm)
+libnuma_dep = dependency('numa', version : '>=1.0.1', required: with_rocm)
 
 has_attribute_cleanup = cc.compiles('''
    void func(void *v) {}
@@ -444,4 +453,5 @@ summary({'c_args': (' ').join(get_option('c_args')),
         'fuzzer': with_fuzzer,
         'tracing': with_tracing,
         'unstable-apis': with_unstable_apis,
+        'rocm': with_rocm,
         }, section: 'Configuration')
