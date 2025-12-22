@@ -512,6 +512,8 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
 
    uint32_t map_info = VIRGL_RENDERER_MAP_CACHE_NONE;
    if (blob_flags & VIRGL_RENDERER_BLOB_FLAG_USE_MAPPABLE) {
+      const VkPhysicalDeviceProperties *props = &mem->device->physical_device->properties;
+      const bool is_dgpu = props->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
       const bool visible = mem->property_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
       const bool coherent = mem->property_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
       const bool cached = mem->property_flags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
@@ -521,8 +523,8 @@ vkr_device_memory_export_blob(struct vkr_device_memory *mem,
       }
 
       /* XXX guessed */
-      map_info = (coherent && cached) ? VIRGL_RENDERER_MAP_CACHE_CACHED
-                                      : VIRGL_RENDERER_MAP_CACHE_WC;
+      map_info = (!is_dgpu && coherent && cached) ? VIRGL_RENDERER_MAP_CACHE_CACHED
+                                                  : VIRGL_RENDERER_MAP_CACHE_WC;
    }
 
    const bool can_export_dma_buf = mem->valid_fd_types & (1 << VIRGL_RESOURCE_FD_DMABUF);
