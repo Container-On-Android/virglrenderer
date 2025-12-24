@@ -124,6 +124,13 @@ drm_asahi_sources = [
    'drm/asahi/asahi_renderer.h',
 ]
 
+drm_panfrost_sources = [
+   'drm/panfrost/panfrost_renderer.c',
+   'drm/panfrost/panfrost_resource.c',
+   'drm/panfrost/panfrost_object.c',
+   'drm/panfrost/panfrost_ccmd.c',
+]
+
 proxy_sources = [
    'proxy/proxy_client.c',
    'proxy/proxy_common.c',
@@ -195,6 +202,10 @@ endif
 
 if with_drm_asahi
    virgl_sources += drm_asahi_sources
+endif
+
+if with_drm_panfrost
+   virgl_sources += drm_panfrost_sources
 endif
 
 if with_render_server
