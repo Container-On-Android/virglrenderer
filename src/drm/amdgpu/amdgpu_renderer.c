@@ -526,6 +526,10 @@ amdgpu_ccmd_gem_new(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
       .preferred_heap = req->r.preferred_heap,
       .flags = req->r.flags,
    };
+
+   /* We assume all buffers are sensitive. */
+   r.flags |= AMDGPU_GEM_CREATE_VRAM_WIPE_ON_RELEASE;
+
    amdgpu_bo_handle bo_handle;
    ret = amdgpu_bo_alloc(ctx->dev, &r, &bo_handle);
 
