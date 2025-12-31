@@ -1,0 +1,23 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # every first day of month 00:00
+  workflow_dispatch: # on button click
+
+jobs:
+  sync:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: tgymnich/fork-sync@v2.0.10
+        with:
+          owner: Container-On-Android
+          base: main
+          head: main
+          pr_title: "Merge upstream branch 'main'"
+          pr_message: "Merge branch 'lxc:main' into main"
+          auto_merge: true
+          merge_method: rebase
+          ignore_fail: true

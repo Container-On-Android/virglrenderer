@@ -141,10 +141,15 @@ video_sources = [
 virgl_depends = [
    gallium_dep,
    epoxy_dep,
-   libdrm_dep,
    thread_dep,
    m_dep,
 ]
+
+if conf_data.get('IS_BIONIC') == true
+   virgl_depends += [liblog_dep]
+else
+   virgl_depends += [libdrm_dep]
+endif
 
 if with_tracing == 'perfetto'
    virgl_depends += [vperfetto_min_dep]
