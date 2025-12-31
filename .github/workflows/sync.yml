@@ -1,0 +1,40 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 0 1 * *' # every first day of month 00:00
+  workflow_dispatch: # on button click
+
+jobs:
+  sync:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+      
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://gitlab.freedesktop.org/virgl/virglrenderer.git 2>/dev/null || true
+          git fetch upstream
+          git fetch origin
+          git checkout -b upstream upstream/main
+      
+      - uses: tgymnich/fork-sync@v2.0.10
+        with:
+          owner: Container-On-Android
+          base: main
+          head: upstream
+          pr_title: "Merge upstream branch 'main'"
+          pr_message: "Merge branch 'virglrenderer:main' into main"
+          auto_merge: true
+          merge_method: rebase
+          ignore_fail: true

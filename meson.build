@@ -93,6 +93,10 @@ conf_data.set('_GNU_SOURCE', 1)
 # APIs. Unstable APIs may be changed or removed without a notice.
 conf_data.set('VIRGL_RENDERER_UNSTABLE_APIS', 1)
 
+## Android
+have = cc.get_id().contains('clang') and cc.has_header('android/log.h')
+conf_data.set10('IS_BIONIC', have)
+
 drm_renderers = get_option('drm-renderers')
 
 with_drm_msm = drm_renderers.contains('msm')
@@ -116,7 +120,12 @@ if with_drm_renderers
   conf_data.set('ENABLE_DRM', 1)
 endif
 
-libdrm_dep = dependency('libdrm', version : '>=2.4.50', required: with_drm_renderers or get_option('video'))
+if conf_data.get('IS_BIONIC') == true
+   libdrm_dep = dependency('libdrm', required: false)
+   liblog_dep = cc.find_library('log', required: true)
+else
+   libdrm_dep = dependency('libdrm', version : '>=2.4.50', required: with_drm_renderers or get_option('video'))
+endif
 libdrm_amdgpu_dep = dependency('libdrm_amdgpu', version : '>=2.4.121', required: with_drm_amdgpu)
 conf_data.set('ENABLE_LIBDRM', libdrm_dep.found())
 drm_uapi_dep = declare_dependency(
@@ -172,6 +181,7 @@ endif
 
 with_host_windows = host_machine.system() == 'windows'
 with_host_darwin = host_machine.system() == 'darwin'
+with_target_android = target_machine.system() == 'android'
 
 if thread_dep.found() and not with_host_windows
   conf_data.set('HAVE_PTHREAD', 1)
@@ -279,7 +289,7 @@ have_glx = false
 
 if with_egl
    if cc.has_header('epoxy/egl.h', dependencies: epoxy_dep) and epoxy_dep.get_variable(pkgconfig: 'epoxy_has_egl') == '1'
-      if with_host_windows or with_host_darwin
+      if with_host_windows or with_host_darwin or with_target_android
          have_egl = true
       else
          if libdrm_dep.found()

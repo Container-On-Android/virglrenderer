@@ -1,0 +1,22 @@
+[binaries]
+c = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang'
+cpp = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android30-clang++'
+ar = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+as = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-as'
+ld = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ld'
+strip = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+ranlib = 'android-ndk-r28c/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ranlib'
+pkgconfig = '/usr/bin/pkg-config'
+cmake = '/usr/bin/cmake'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+
+[target_machine]
+system = 'android'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
