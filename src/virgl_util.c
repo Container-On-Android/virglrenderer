@@ -257,10 +257,15 @@ void virgl_prefixed_logv(const char *domain,
                          va_list va)
 {
    char *prefixed_fmt = NULL;
+   char line_end = '\0';
 
    assert(strchr(domain,'%') == NULL);
 
-   if (asprintf(&prefixed_fmt, "%s: %s", domain, fmt) < 0)
+   /* add new line if needed */
+   if (fmt[strlen(fmt)-1] != '\n')
+      line_end = '\n';
+
+   if (asprintf(&prefixed_fmt, "%s: %s%c", domain, fmt, line_end) < 0)
       return;
 
    virgl_logv(log_level, prefixed_fmt, va);
