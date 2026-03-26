@@ -104,6 +104,7 @@ struct vrend_resource {
    uint64_t mipmap_offsets[VR_MAX_TEXTURE_2D_LEVELS];
    void *gbm_bo, *egl_image;
    void *aux_plane_egl_image[VIRGL_GBM_MAX_PLANES];
+   bool gbm_direct_transfer;
 #ifdef WIN32
    ID3D11Texture2D *d3d_tex2d;
 #endif
@@ -646,5 +647,8 @@ vrend_renderer_resource_d3d11_texture2d(struct pipe_resource *res, void **handle
 int
 vrend_renderer_pipe_resource_get_layout(struct vrend_context *ctx,
                                         uint32_t out_res_id, uint32_t res_id);
+
+int
+vrend_renderer_pipe_query_format_modifier(struct vrend_context *ctx, uint32_t res_id);
 
 #endif

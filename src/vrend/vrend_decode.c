@@ -1763,6 +1763,17 @@ static int vrend_decode_get_pipe_resource_layout(struct vrend_context *ctx, cons
    return vrend_renderer_pipe_resource_get_layout(ctx, out_handle, target_handle);
 }
 
+static int vrend_decode_query_gbm_format_modifier(struct vrend_context *ctx, const uint32_t *buf, uint32_t length)
+{
+   TRACE_FUNC();
+   if (length < VIRGL_QUERY_FORMAT_MODIFIER_SIZE)
+      return EINVAL;
+
+   uint32_t handle = get_buf_entry(buf, VIRGL_QUERY_FORMAT_MODIFIER_HANDLE);
+
+   return vrend_renderer_pipe_query_format_modifier(ctx, handle);
+}
+
 #ifdef ENABLE_VIDEO
 /* video codec related functions */
 
@@ -2031,6 +2042,7 @@ static const vrend_decode_callback decode_table[VIRGL_MAX_COMMANDS] = {
    [VIRGL_CCMD_END_FRAME] = vrend_unsupported,
 #endif
    [VIRGL_CCMD_GET_PIPE_RESOURCE_LAYOUT] = vrend_decode_get_pipe_resource_layout,
+   [VIRGL_CCMD_QUERY_GBM_FORMAT_MODIFIER] = vrend_decode_query_gbm_format_modifier,
 };
 
 static void dump_command_stream_to_file(const void *buffer, size_t size)

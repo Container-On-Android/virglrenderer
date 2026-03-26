@@ -53,6 +53,7 @@
 #include "vrend_debug.h"
 #include "vrend_winsys.h"
 #include "vrend_blitter.h"
+#include "vrend_venus_interop.h"
 
 #include "virgl_util.h"
 
@@ -7573,7 +7574,7 @@ static bool vrend_use_gbm_layout_feature(UNUSED uint32_t flags)
    if (debug_get_bool_option("VIRGL_GBM_LAYOUT_FORCE_ENABLE", false))
       return true;
 
-   if (!debug_get_bool_option("VIRGL_GBM_LAYOUT_ENABLE", false))
+   if (debug_get_bool_option("VIRGL_GBM_LAYOUT_DISABLE", false))
       return false;
 
    if (!(flags & VREND_USE_GBM_LAYOUT))
@@ -7769,6 +7770,11 @@ int vrend_renderer_init(const struct vrend_if_cbs *cbs, uint32_t flags)
 
    vrend_state.gbm_layout_feat = vrend_use_gbm_layout_feature(flags);
 
+#if defined(ENABLE_GBM_ALLOCATION) && !defined(MINIGBM)
+   if (gbm && gbm->device && vrend_state.gbm_layout_feat)
+      vrend_init_venus_interop(gbm->device);
+#endif
+
    return 0;
 cleanup_and_fail:
    if (flags & VREND_USE_THREAD_SYNC)
@@ -7788,6 +7794,8 @@ vrend_renderer_fini(void)
       close(vrend_state.eventfd);
       vrend_state.eventfd = -1;
    }
+
+   vrend_deinit_venus_interop();
 
    vrend_free_fences();
    vrend_blitter_fini();
@@ -8613,24 +8621,27 @@ static void vrend_resource_gbm_init(struct vrend_resource *gr, uint32_t format)
     * GBM allocation may be less optimal compared to a regular GL allocation.
     * Skip GBM allocation when we don't actually need it.
     */
-   if (!vrend_state.gbm_layout_feat)
+   if (!vrend_has_venus_interop())
       return;
-
-   /*
-    * Kernel virtio-gpu driver doesn't support modifiers other than linear and
-    * venus needs a real modifier that backs GBM buffer when it imports vrend
-    * resource. Linear allocation is needed when venus works in KMS mode on guest
-    * and it wants to present vrend resources.
-    */
-   if (gr->base.bind & VIRGL_BIND_SHARED)
-      gbm_flags |= GBM_BO_USE_LINEAR;
 #endif
 
    if (!gbm_device_is_format_supported(gbm->device, gbm_format, gbm_flags))
       return;
 
-   struct gbm_bo *bo = gbm_bo_create(gbm->device, gr->base.width0, gr->base.height0,
-                                     gbm_format, gbm_flags);
+   struct gbm_bo *bo;
+
+#if !defined(MINIGBM)
+   if ((gr->base.bind & VIRGL_BIND_SHARED) && !(gbm_flags & GBM_BO_USE_LINEAR)) {
+      bo = vrend_vk_gbm_bo_create(gbm->device, gr->base.width0, gr->base.height0,
+                                  gbm_format);
+   } else
+#endif
+   {
+      bo = gbm_bo_create(gbm->device, gr->base.width0, gr->base.height0,
+                         gbm_format, gbm_flags);
+
+      gr->gbm_direct_transfer = true;
+   }
    if (!bo)
       return;
 
@@ -10026,7 +10037,8 @@ static int vrend_renderer_transfer_internal(struct vrend_context *ctx,
    }
 
 #if defined(HAVE_EPOXY_EGL_H) && defined(ENABLE_GBM_ALLOCATION)
-   if (res->gbm_bo && (transfer_mode == VIRGL_TRANSFER_TO_HOST ||
+   if (res->gbm_direct_transfer &&
+       (transfer_mode == VIRGL_TRANSFER_TO_HOST ||
                        !has_bit(res->storage_bits, VREND_STORAGE_EGL_IMAGE))) {
       const bool success = virgl_gbm_transfer(res->gbm_bo, transfer_mode, iov, num_iovs, info) == 0;
       if (success)
@@ -10119,7 +10131,7 @@ int vrend_transfer_inline_write(struct vrend_context *ctx,
    }
 
 #if defined(HAVE_EPOXY_EGL_H) && defined(ENABLE_GBM_ALLOCATION)
-   if (res->gbm_bo) {
+   if (res->gbm_direct_transfer) {
       assert(!info->synchronized);
       return virgl_gbm_transfer(res->gbm_bo,
                                 VIRGL_TRANSFER_TO_HOST,
@@ -10151,7 +10163,7 @@ int vrend_renderer_copy_transfer3d(struct vrend_context *ctx,
    }
 
 #if defined(HAVE_EPOXY_EGL_H) && defined(ENABLE_GBM_ALLOCATION)
-   if (dst_res->gbm_bo && !TRANSFER_NO_GBM_MAPPING(info)) {
+   if (dst_res->gbm_direct_transfer && !TRANSFER_NO_GBM_MAPPING(info)) {
       bool use_gbm = true;
 
       /* The guest uses copy transfers against busy resources to avoid
@@ -10208,7 +10220,7 @@ int vrend_renderer_copy_transfer3d_from_host(struct vrend_context *ctx,
    }
 
 #if defined(HAVE_EPOXY_EGL_H) && defined(ENABLE_GBM_ALLOCATION)
-   if (src_res->gbm_bo && !TRANSFER_NO_GBM_MAPPING(info)) {
+   if (src_res->gbm_direct_transfer && !TRANSFER_NO_GBM_MAPPING(info)) {
       bool use_gbm = true;
 
       /* The guest uses copy transfers against busy resources to avoid
@@ -12883,8 +12895,8 @@ static void vrend_renderer_fill_caps_v2(int gl_ver, int gles_ver,  union virgl_c
 #else
    caps->v2.num_video_caps = 0;
 #endif
-   if (vrend_state.gbm_layout_feat)
-      caps->v2.capability_bits_v2 |= VIRGL_CAP_V2_RESOURCE_LAYOUT;
+   if (vrend_has_venus_interop())
+      caps->v2.capability_bits_v2 |= VIRGL_CAP_V2_QUERY_FORMAT_MODIFIER;
 }
 
 void vrend_renderer_fill_caps(uint32_t set, uint32_t version,
@@ -13813,10 +13825,51 @@ vrend_renderer_pipe_resource_get_layout(struct vrend_context *ctx,
 
    return 0;
 }
+
+int
+vrend_renderer_pipe_query_format_modifier(struct vrend_context *ctx, uint32_t res_id)
+{
+   struct virgl_gbm_format_modifier fmt_mod = { 0 };
+   struct vrend_resource *res;
+
+   res = vrend_renderer_ctx_res_lookup(ctx, res_id);
+   if (!res) {
+      vrend_report_context_error(ctx, VIRGL_ERROR_CTX_ILLEGAL_RESOURCE, res_id);
+      return EINVAL;
+   }
+
+   vrend_vk_get_supported_formats(&fmt_mod);
+
+   if (res->iov) {
+      if (vrend_write_to_iovec(res->iov, res->num_iovs, 0,
+                               (const void *) &fmt_mod, sizeof(fmt_mod)) != sizeof(fmt_mod)) {
+         virgl_error("format modifier list does not fit IOV size\n");
+         vrend_report_context_error(ctx, VIRGL_ERROR_CTX_ILLEGAL_RESOURCE, res_id);
+         return EINVAL;
+      }
+   } else {
+      if (res->base.width0 >= sizeof(fmt_mod)) {
+         memcpy(res->ptr, &fmt_mod, sizeof(fmt_mod));
+      } else {
+         virgl_error("format modifier list does not fit buffer size\n");
+         vrend_report_context_error(ctx, VIRGL_ERROR_CTX_ILLEGAL_RESOURCE, res_id);
+         return EINVAL;
+      }
+   }
+
+   return 0;
+}
 #else
 int
 vrend_renderer_pipe_resource_get_layout(UNUSED struct vrend_context *ctx,
                                         UNUSED uint32_t out_res_id, UNUSED uint32_t res_id)
+{
+   return EINVAL;
+}
+
+int
+vrend_renderer_pipe_query_format_modifier(UNUSED struct vrend_context *ctx,
+                                          UNUSED uint32_t res_id)
 {
    return EINVAL;
 }

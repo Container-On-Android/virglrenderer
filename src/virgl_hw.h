@@ -629,6 +629,7 @@ enum virgl_formats {
 #define VIRGL_CAP_V2_MIRROR_CLAMP_TO_EDGE (1u << 16)
 #define VIRGL_CAP_V2_MIRROR_CLAMP         (1u << 17)
 #define VIRGL_CAP_V2_RESOURCE_LAYOUT      (1u << 18)
+#define VIRGL_CAP_V2_QUERY_FORMAT_MODIFIER (1u << 19)
 
 /* virgl bind flags - these are compatible with mesa 10.5 gallium.
  * but are fixed, no other should be passed to virgl either.

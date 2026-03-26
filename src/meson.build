@@ -60,6 +60,10 @@ vrend_winsys_glx_sources = [
    'vrend/vrend_winsys_glx.c',
 ]
 
+vrend_venus_interop_sources = [
+   'vrend/vrend_venus_interop.c',
+]
+
 venus_sources = [
    'venus/vkr_acceleration_structure.c',
    'venus/vkr_allocator.c',
@@ -206,6 +210,10 @@ endif
 if have_glx
    virgl_sources += vrend_winsys_glx_sources
    virgl_depends += [glx_dep]
+endif
+
+if with_venus and gbm_dep.found()
+   virgl_sources += vrend_venus_interop_sources
 endif
 
 if with_venus
