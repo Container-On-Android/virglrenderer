@@ -35,9 +35,12 @@ dEQP-VK.ray_query.acceleration_structures.operations.traditional_structures.comp
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.flags.sparse_binding_structures.gpu_built.aabbs.identical_instances.padded.fastbuild_update_0_0_bothgeneric
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.flags.traditional_structures.gpu_built.triangles.different_instances.padded.0_update_0_0_bothgeneric
 dEQP-VK.ray_tracing_pipeline.shader_binding_table.indexing_hit.sbt_offset_0.no_shaderrecord.1_5_extraSBTRecordStrideBits
+dEQP-VK.reconvergence.maximal.compute.nesting2.5.18
+dEQP-VK.reconvergence.maximal.compute.nesting2.6.22
 dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.random.seed88_geometry
 dEQP-VK.renderpasses.renderpass2.suballocation.attachment_allocation.roll.56
 dEQP-VK.robustness.robustness2.push.notemplate.r32ui.unroll.volatile.storage_texel_buffer.no_fmt_qual.len_36.samples_1.1d.comp
+dEQP-VK.sparse_resources.buffer.ssbo.sparse_residency.buffer_size_2_24
 dEQP-VK.sparse_resources.image_sparse_residency.mutable.2d_array.r16_unorm_r8g8_sint_r8g8_snorm
 dEQP-VK.spirv_assembly.instruction.graphics.16bit_storage.uniform_float_16_to_32.uniform_buffer_block_vector_float_const_idx_6_tesse
 dEQP-VK.spirv_assembly.instruction.graphics.16bit_storage.uniform_float_16_to_64.uniform_buffer_block_vector_float_geom
@@ -46,6 +49,7 @@ dEQP-VK.spirv_assembly.type.scalar.u8.bit_field_s_extract_offset64_count64_comp
 dEQP-VK.synchronization.cross_instance.suballocated.write_clear_color_image_read_image_compute_indirect.image_64x64x8_r32_sfloat_timeline_semaphore_zircon_handle
 dEQP-VK.synchronization.op.multi_queue.fence.write_draw_read_image_vertex.image_128x128_r16_uint_concurrent_maintenance9
 dEQP-VK.texture.swizzle.component_mapping.color.r16_snorm_2d_pot_bbbb
+dEQP-VK.wsi.direct_drm.swapchain.create.image_array_layers
 
 dEQP-VK.api.info.image_format_properties2.2d.optimal.g16_b16r16_2plane_422_unorm
 dEQP-VK.api.info.image_format_properties2.2d.optimal.g8_b8r8_2plane_420_unorm
