@@ -374,7 +374,7 @@ if with_venus
    if get_option('vulkan-dload')
       conf_data.set('ENABLE_VULKAN_DLOAD', 1)
    else
-      venus_dep = dependency('vulkan')
+      venus_dep += dependency('vulkan')
    endif
 
    if host_machine.system() in ['freebsd', 'openbsd']
