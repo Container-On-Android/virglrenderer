@@ -239,10 +239,10 @@ struct dump_ctx {
    uint32_t ssbo_array_base;
    uint32_t ssbo_atomic_array_base;
    uint32_t ssbo_integer_mask;
-   uint8_t ssbo_memory_qualifier[32];
+   uint8_t ssbo_memory_qualifier[PIPE_MAX_SHADER_BUFFERS];
    int32_t ssbo_last_binding;
 
-   struct vrend_shader_image images[32];
+   struct vrend_shader_image images[PIPE_MAX_SHADER_IMAGES];
    uint32_t images_used_mask;
    int32_t image_last_binding;
 
@@ -3722,7 +3722,7 @@ static bool is_integer_memory(const struct dump_ctx *ctx, enum tgsi_file_type fi
    return false;
 }
 
-static void set_image_qualifier(struct vrend_shader_image images[],
+static bool set_image_qualifier(struct vrend_shader_image images[],
                                 uint32_t image_used_mask,
                                 const struct tgsi_full_instruction *inst,
                                 uint32_t reg_index, bool indirect)
@@ -3731,12 +3731,15 @@ static void set_image_qualifier(struct vrend_shader_image images[],
       if (indirect) {
          while (image_used_mask)
             images[u_bit_scan(&image_used_mask)].coherent = true;
-      } else
+      } else if (reg_index < PIPE_MAX_SHADER_IMAGES) {
          images[reg_index].coherent = true;
+      } else
+         return false;
    }
+   return true;
 }
 
-static void set_memory_qualifier(uint8_t ssbo_memory_qualifier[],
+static bool set_memory_qualifier(uint8_t ssbo_memory_qualifier[],
                                  uint32_t ssbo_used_mask,
                                  const struct tgsi_full_instruction *inst,
                                  uint32_t reg_index, bool indirect)
@@ -3745,9 +3748,12 @@ static void set_memory_qualifier(uint8_t ssbo_memory_qualifier[],
       if (indirect) {
          while (ssbo_used_mask)
             ssbo_memory_qualifier[u_bit_scan(&ssbo_used_mask)] = TGSI_MEMORY_COHERENT;
-      } else
+      } else if (reg_index < PIPE_MAX_SHADER_BUFFERS) {
          ssbo_memory_qualifier[reg_index] = TGSI_MEMORY_COHERENT;
+      } else
+         return false;
    }
+   return true;
 }
 
 static void emit_store_mem(struct vrend_glsl_strbufs *glsl_strbufs, const char *dst, int writemask,
@@ -3805,7 +3811,10 @@ translate_store(const struct dump_ctx *ctx,
       if (!((1 << dinfo->dest_index) & ctx->images_used_mask))
             return;
 
-      set_image_qualifier(images, ctx->images_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect);
+      if (!set_image_qualifier(images, ctx->images_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect)) {
+         set_buf_error(glsl_strbufs);
+         return;
+      }
 
       bool is_ms = false;
       enum vrend_type_qualifier coord_prefix = get_coord_prefix(ctx->images[dst_reg->Register.Index].decl.Resource, &is_ms, ctx->cfg->use_gles);
@@ -3852,8 +3861,12 @@ translate_store(const struct dump_ctx *ctx,
    } else if (dst_reg->Register.File == TGSI_FILE_BUFFER ||
               dst_reg->Register.File == TGSI_FILE_MEMORY) {
       enum vrend_type_qualifier dtypeprefix;
-      set_memory_qualifier(ssbo_memory_qualifier, ctx->ssbo_used_mask, inst, dst_reg->Register.Index,
-                           dst_reg->Register.Indirect);
+
+      if (!set_memory_qualifier(ssbo_memory_qualifier, ctx->ssbo_used_mask, inst, dst_reg->Register.Index,
+                           dst_reg->Register.Indirect)) {
+         set_buf_error(glsl_strbufs);
+         return;
+      }
       dtypeprefix = is_integer_memory(ctx, dst_reg->Register.File, dst_reg->Register.Index) ?
                     FLOAT_BITS_TO_INT : FLOAT_BITS_TO_UINT;
       const char *conversion = sinfo->override_no_cast[1] ? "" : get_string(dtypeprefix);
@@ -3919,7 +3932,10 @@ translate_load(const struct dump_ctx *ctx,
       if (!((1 << sinfo->sreg_index) & ctx->images_used_mask))
             return false;
 
-      set_image_qualifier(images, ctx->images_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect);
+      if (!set_image_qualifier(images, ctx->images_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect)) {
+         set_buf_error(glsl_strbufs);
+         return false;
+      }
 
 
       bool is_ms = false;
@@ -3985,7 +4001,10 @@ translate_load(const struct dump_ctx *ctx,
       char mydst[255], atomic_op[9], atomic_src[10];
       enum vrend_type_qualifier dtypeprefix;
 
-      set_memory_qualifier(ssbo_memory_qualifier, ctx->ssbo_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect);
+      if (!set_memory_qualifier(ssbo_memory_qualifier, ctx->ssbo_used_mask, inst, inst->Src[0].Register.Index, inst->Src[0].Register.Indirect)) {
+         set_buf_error(glsl_strbufs);
+         return false;
+      }
 
       const char *d = dst;
       char *md = mydst;
@@ -4167,8 +4186,11 @@ translate_atomic(struct dump_ctx *ctx,
          snprintf(ms_str, 32, ", int(%s.w)", srcs[1]);
       }
 
-      set_image_qualifier(ctx->images, ctx->images_used_mask, inst,
-                          inst->Src[0].Register.Index, inst->Src[0].Register.Indirect);
+      if (!set_image_qualifier(ctx->images, ctx->images_used_mask, inst,
+                          inst->Src[0].Register.Index, inst->Src[0].Register.Indirect)) {
+         set_buf_error(&ctx->glsl_strbufs);
+         return;
+      }
 
       if (!ctx->cfg->use_gles || !inst->Src[0].Register.Indirect) {
          emit_buff(&ctx->glsl_strbufs, "%s = %s(imageAtomic%s(%s, %s(%s(%s))%s, %s(%s(%s))%s));\n",
