@@ -4151,6 +4151,11 @@ translate_atomic(struct dump_ctx *ctx,
    char cas_str[128] = "";
 
    if (src->Register.File == TGSI_FILE_IMAGE) {
+      if (sinfo->sreg_index < 0 || sinfo->sreg_index >= PIPE_MAX_SHADER_IMAGES) {
+         set_buf_error(&ctx->glsl_strbufs);
+         return;
+      }
+
      enum tgsi_return_type itype;
      get_internalformat_string(ctx->images[sinfo->sreg_index].decl.Format, &itype);
      switch (itype) {
@@ -4233,6 +4238,11 @@ translate_atomic(struct dump_ctx *ctx,
    }
    if (src->Register.File == TGSI_FILE_BUFFER || src->Register.File == TGSI_FILE_MEMORY) {
       enum vrend_type_qualifier type;
+      if (src->Register.Index < 0 || src->Register.Index >= PIPE_MAX_SHADER_BUFFERS) {
+         set_buf_error(&ctx->glsl_strbufs);
+         return;
+      }
+
       if ((is_integer_memory(ctx, src->Register.File, src->Register.Index))) {
          type = INT;
          dtypeprefix = INT_BITS_TO_FLOAT;
