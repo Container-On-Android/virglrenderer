@@ -1331,6 +1331,12 @@ iter_declaration(struct tgsi_iterate_context *iter,
          return false;
       }
 
+      if (decl->Range.Last >= ARRAY_SIZE(ctx->inputs)) {
+         virgl_error("Input slot out of range, want %d, max is %zd\n",
+                     decl->Range.Last, ARRAY_SIZE(ctx->inputs));
+         return false;
+      }
+
       if (iter->processor.Processor == TGSI_PROCESSOR_VERTEX) {
          ctx->attrib_input_mask |= (1 << decl->Range.First);
          ctx->inputs[i].type = get_type(ctx->key->vs.attrib_signed_int_bitmask,
@@ -1635,6 +1641,12 @@ iter_declaration(struct tgsi_iterate_context *iter,
       i = ctx->num_outputs++;
       if (ctx->num_outputs > ARRAY_SIZE(ctx->outputs)) {
          virgl_error("Number of outputs exceeded, max is %zd\n", ARRAY_SIZE(ctx->outputs));
+         return false;
+      }
+
+      if (decl->Range.Last >= ARRAY_SIZE(ctx->outputs)) {
+         virgl_error("Input slot out of range, want %d, max is %zd\n",
+                     decl->Range.Last, ARRAY_SIZE(ctx->outputs));
          return false;
       }
 
