@@ -3807,6 +3807,11 @@ translate_store(const struct dump_ctx *ctx,
    }
    if (dst_reg->Register.File == TGSI_FILE_IMAGE) {
 
+      if (dinfo->dest_index >= PIPE_MAX_SHADER_IMAGES) {
+         set_buf_error(glsl_strbufs);
+         return;
+      }
+
       /* bail out if we want to write to a non-existing image */
       if (!((1 << dinfo->dest_index) & ctx->images_used_mask))
             return;
@@ -3861,6 +3866,11 @@ translate_store(const struct dump_ctx *ctx,
    } else if (dst_reg->Register.File == TGSI_FILE_BUFFER ||
               dst_reg->Register.File == TGSI_FILE_MEMORY) {
       enum vrend_type_qualifier dtypeprefix;
+
+      if (dinfo->dest_index >= PIPE_MAX_SHADER_BUFFERS) {
+         set_buf_error(glsl_strbufs);
+         return;
+      }
 
       if (!set_memory_qualifier(ssbo_memory_qualifier, ctx->ssbo_used_mask, inst, dst_reg->Register.Index,
                            dst_reg->Register.Indirect)) {
@@ -3926,9 +3936,10 @@ translate_load(const struct dump_ctx *ctx,
    if (src->Register.File == TGSI_FILE_IMAGE) {
 
       /* Bail out if we want to load from an image that is not actually used */
-      if (sinfo->sreg_index < 0) {
+      if (sinfo->sreg_index < 0 || sinfo->sreg_index > PIPE_MAX_SHADER_IMAGES) {
          return false;
       }
+
       if (!((1 << sinfo->sreg_index) & ctx->images_used_mask))
             return false;
 
