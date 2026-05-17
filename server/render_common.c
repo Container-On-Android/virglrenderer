@@ -4,6 +4,9 @@
  */
 
 #include "render_common.h"
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+#include "virgl_util.h"
+#endif
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -21,6 +24,10 @@ render_log(const char *fmt, ...)
    va_list va;
 
    va_start(va, fmt);
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+   virgl_prefixed_logv("server", VIRGL_LOG_LEVEL_INFO, fmt, va);
+#else
    vsyslog(LOG_DEBUG, fmt, va);
+#endif
    va_end(va);
 }

@@ -69,7 +69,9 @@ vkr_renderer_init(uint32_t flags, const struct vkr_renderer_callbacks *cbs)
       return false;
 
    vkr_debug_init();
-   virgl_log_set_handler(cbs->debug_logger, NULL, NULL);
+
+   if (cbs->debug_logger)
+      virgl_log_set_handler(cbs->debug_logger, NULL, NULL);
 
    vkr_state.cbs = cbs;
    list_inithead(&vkr_state.contexts);

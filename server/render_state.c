@@ -93,6 +93,7 @@ render_state_lookup_context(uint32_t ctx_id)
    return ctx;
 }
 
+#ifndef ENABLE_SAME_PROCESS_RENDER_SERVER
 static void
 render_state_cb_debug_logger(UNUSED enum virgl_log_level_flags log_level,
                              const char *message,
@@ -100,6 +101,7 @@ render_state_cb_debug_logger(UNUSED enum virgl_log_level_flags log_level,
 {
    render_log(message);
 }
+#endif
 
 static void
 render_state_cb_retire_fence(uint32_t ctx_id, uint32_t ring_idx, uint64_t fence_id)
@@ -112,7 +114,9 @@ render_state_cb_retire_fence(uint32_t ctx_id, uint32_t ring_idx, uint64_t fence_
 }
 
 static const struct vkr_renderer_callbacks render_state_cbs = {
+#ifndef ENABLE_SAME_PROCESS_RENDER_SERVER
    .debug_logger = render_state_cb_debug_logger,
+#endif
    .retire_fence = render_state_cb_retire_fence,
 };
 
