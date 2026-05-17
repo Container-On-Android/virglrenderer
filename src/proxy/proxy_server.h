@@ -10,9 +10,16 @@
 
 #include <sys/types.h>
 
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+#include "c11/threads.h"
+#endif
+
 struct proxy_server {
    pid_t pid;
    int client_fd;
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+   thrd_t thread;
+#endif
 };
 
 struct proxy_server *

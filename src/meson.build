@@ -154,6 +154,18 @@ proxy_sources = [
    'proxy/proxy_socket.c',
 ]
 
+if with_render_server == 'thread'
+   proxy_sources += [
+      '../server/render_client.c',
+      '../server/render_common.c',
+      '../server/render_context.c',
+      '../server/render_server.c',
+      '../server/render_socket.c',
+      '../server/render_state.c',
+      '../server/render_worker.c',
+   ]
+endif
+
 video_sources = [
    'vrend/virgl_video.c',
    'vrend/vrend_video.c',
@@ -235,7 +247,7 @@ if with_drm_i915
    virgl_sources += drm_i915_sources
 endif
 
-if with_render_server
+if with_render_server != ''
    virgl_sources += proxy_sources
 endif
 

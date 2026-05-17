@@ -11,6 +11,11 @@
 
 #include "server/render_protocol.h"
 
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+#include "server/render_context.h"
+#include "server/render_server.h"
+#endif
+
 int
 proxy_server_connect(struct proxy_server *srv)
 {
@@ -32,6 +37,10 @@ proxy_server_destroy(struct proxy_server *srv)
 
    if (srv->client_fd >= 0)
       close(srv->client_fd);
+
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+   thrd_join(srv->thread, NULL);
+#endif
 
    free(srv);
 }
@@ -95,6 +104,50 @@ proxy_server_init_fd(struct proxy_server *srv)
    return true;
 }
 
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+static int
+proxy_server_start_thread(void *args)
+{
+   int remote_fd = (int)(uintptr_t)args;
+   char fd_str[16];
+   snprintf(fd_str, sizeof(fd_str), "%d", remote_fd);
+   char *argv[] = {
+      RENDER_SERVER_EXEC_PATH,
+      "--socket-fd",
+      fd_str,
+      NULL,
+   };
+   struct render_context_args ctx_args;
+
+   bool ok = render_server_main(3, argv, &ctx_args);
+
+   return ok ? 0 : -1;
+}
+
+static bool
+proxy_server_init_thread(struct proxy_server *srv)
+{
+   int socket_fds[2];
+
+   if (!proxy_socket_pair(socket_fds))
+      return false;
+
+   const int client_fd = socket_fds[0];
+   const uintptr_t remote_fd = socket_fds[1];
+
+   bool ok = thrd_create(&srv->thread, proxy_server_start_thread, (void *)remote_fd) == thrd_success;
+
+   if (ok) {
+      srv->client_fd = client_fd;
+   } else {
+      close(client_fd);
+      close(remote_fd);
+   }
+
+   return ok;
+}
+#endif
+
 struct proxy_server *
 proxy_server_create(void)
 {
@@ -104,6 +157,12 @@ proxy_server_create(void)
 
    srv->pid = -1;
 
+#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+   if (!proxy_server_init_thread(srv)) {
+      free(srv);
+      return NULL;
+   }
+#else
    if (!proxy_server_init_fd(srv)) {
       /* start the render server on demand when the client does not provide a
        * server fd
@@ -113,6 +172,7 @@ proxy_server_create(void)
          return NULL;
       }
    }
+#endif
 
    if (!proxy_socket_is_valid(srv->client_fd)) {
       proxy_log("invalid client fd type");

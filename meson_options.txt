@@ -86,10 +86,18 @@ option(
 )
 
 option(
-  'render-server-worker',
+  'render-server-mode',
   type : 'combo',
   value : 'process',
-  choices : ['process', 'thread', 'minijail'],
+  choices : ['process', 'thread'],
+  description : 'how render server itself is spawned'
+)
+
+option(
+  'render-server-worker',
+  type : 'combo',
+  value : 'auto',
+  choices : ['auto', 'process', 'thread', 'minijail'],
   description : 'how a context in render server is serviced'
 )
 

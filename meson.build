@@ -359,8 +359,14 @@ if with_check_gl_errors
 endif
 
 with_venus = get_option('venus')
-with_render_server = with_venus
+with_render_server = ''
+if with_venus
+   with_render_server = get_option('render-server-mode')
+endif
 with_render_server_worker = get_option('render-server-worker')
+if with_render_server_worker == 'auto'
+   with_render_server_worker = with_render_server
+endif
 render_server_install_dir = get_option('prefix') / get_option('libexecdir')
 if with_venus and with_host_darwin
    add_languages('objc', required: true)
@@ -425,6 +431,13 @@ if with_venus
    else
      error('unknown render server worker ' + with_render_server_worker)
    endif
+
+   if with_render_server == 'thread'
+      conf_data.set('ENABLE_SAME_PROCESS_RENDER_SERVER', 1)
+      if with_render_server_worker != 'thread'
+         error('render-server-worker must be \'thread\' if render-server-mode is \'thread\'')
+      endif
+   endif
 endif
 
 with_video = get_option('video')
@@ -468,7 +481,7 @@ if not with_host_windows
    subdir('vtest')
 endif
 
-if with_render_server
+if with_render_server == 'process'
 subdir('server')
 endif
 
@@ -490,7 +503,8 @@ summary({'c_args': (' ').join(get_option('c_args')),
         'drm-i915': with_drm_i915,
         'drm-panfrost': with_drm_panfrost,
         'drm-msm': with_drm_msm,
-        'render server worker': with_render_server ? with_render_server_worker : 'none',
+        'render server mode': with_render_server == '' ? 'none' : with_render_server,
+        'render server worker': with_render_server == '' ? 'none' : with_render_server_worker,
         'video': with_video,
         'tests': with_tests,
         'fuzzer': with_fuzzer,

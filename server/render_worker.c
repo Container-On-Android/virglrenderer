@@ -33,7 +33,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #ifdef ENABLE_RENDER_SERVER_WORKER_THREAD
-#include <threads.h>
+#include "c11/threads.h"
 #endif
 #include <unistd.h>
 
