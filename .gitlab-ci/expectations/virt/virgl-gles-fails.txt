@@ -156,7 +156,6 @@ spec@arb_occlusion_query@occlusion_query_meta_fragments,Fail
 spec@arb_occlusion_query@occlusion_query_meta_no_fragments,Fail
 spec@arb_occlusion_query@occlusion_query_meta_save,Fail
 spec@arb_point_parameters@arb_point_parameters-point-attenuation@Aliased combinations,Fail
-spec@arb_point_parameters@arb_point_parameters-point-attenuation@Antialiased combinations,Fail
 spec@arb_point_parameters@arb_point_parameters-point-attenuation,Fail
 spec@arb_point_sprite@arb_point_sprite-checkerboard,Fail
 spec@arb_program_interface_query@arb_program_interface_query-getprogramresourceindex,ExpectedFail
@@ -274,30 +273,18 @@ spec@arb_texture_compression@texwrap formats bordercolor-swizzled@GL_COMPRESSED_
 spec@arb_texture_cube_map_array@arb_texture_cube_map_array-sampler-cube-array-shadow,Fail
 spec@arb_texture_cube_map_array@fbo-generatemipmap-cubemap array s3tc_dxt1,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_ALPHA16F_ARB- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_ALPHA32F_ARB- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_INTENSITY16F_ARB- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_INTENSITY32F_ARB- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_LUMINANCE16F_ARB- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_LUMINANCE32F_ARB- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_LUMINANCE_ALPHA16F_ARB- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_LUMINANCE_ALPHA32F_ARB- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_RGB16F- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_RGB32F- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor@GL_RGBA16F- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor@GL_RGBA32F- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_ALPHA16F_ARB- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_ALPHA32F_ARB- swizzled- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_INTENSITY16F_ARB- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_INTENSITY32F_ARB- swizzled- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_LUMINANCE16F_ARB- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_LUMINANCE32F_ARB- swizzled- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_LUMINANCE_ALPHA16F_ARB- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_LUMINANCE_ALPHA32F_ARB- swizzled- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_RGB16F- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_RGB32F- swizzled- border color only,Fail
 spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_RGBA16F- swizzled- border color only,Fail
-spec@arb_texture_float@texwrap formats bordercolor-swizzled@GL_RGBA32F- swizzled- border color only,Fail
 spec@arb_texture_query_lod@execution@fs-texturequerylod-nearest-biased,Fail
 spec@arb_texture_rectangle@texwrap rect bordercolor,Fail
 spec@arb_texture_rectangle@texwrap rect bordercolor@GL_RGBA8- border color only,Fail
@@ -2260,7 +2247,6 @@ spec@nv_primitive_restart@primitive-restart-vbo_combined_vertex_and_index,Fail
 spec@nv_primitive_restart@primitive-restart-vbo_index_only,Fail
 spec@nv_primitive_restart@primitive-restart-vbo_separate_vertex_and_index,Fail
 spec@nv_primitive_restart@primitive-restart-vbo_vertex_only,Fail
-spec@nv_read_depth@read_depth_gles3,Fail
 spec@oes_egl_image_external_essl3@oes_egl_image_external_essl3,ExpectedFail
 spec@oes_egl_image_external_essl3@oes_egl_image_external_essl3@oes_egl_image_external_essl3_imageLoad,ExpectedFail
 spec@oes_egl_image_external_essl3@oes_egl_image_external_essl3@oes_egl_image_external_essl3_imageStore,ExpectedFail
@@ -3093,6 +3079,26 @@ spec@ext_image_dma_buf_import@ext_image_dma_buf_import-sample_yvyu,Fail
 spec@ext_image_dma_buf_import@ext_image_dma_buf_import-sample_vyuy,Fail
 
 # uprev Mesa in Virglrenderer
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.interleaved.points.5,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.interleaved.triangles.1,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.lines.6,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.points.4,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.points.5,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.triangles.1,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.triangles.4,Crash
+dEQP-GLES3.functional.transform_feedback.random_full_array_capture.separate.triangles.7,Crash
+dEQP-GLES3.functional.transform_feedback.random.interleaved.triangles.7,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.lines.2,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.lines.6,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.lines.8,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.points.1,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.points.4,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.points.5,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.points.6,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.triangles.1,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.triangles.4,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.triangles.5,Crash
+dEQP-GLES3.functional.transform_feedback.random.separate.triangles.6,Crash
 KHR-GL30.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit,Fail
 KHR-GL30.texture_lod_bias.texture_lod_bias_all,Fail
 KHR-GL31.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit,Fail
@@ -3185,6 +3191,7 @@ spec@ext_framebuffer_multisample@upsample 6 stencil,Fail
 spec@ext_framebuffer_multisample@upsample 8 stencil,Fail
 spec@ext_image_dma_buf_import@ext_image_dma_buf_import-refcount-multithread,Fail
 spec@ext_image_dma_buf_import@ext_image_dma_buf_import-tex-modifier,Fail
+spec@glsl-1.30@execution@glsl-packed-back-color,Fail
 spec@glsl-1.40@uniform_buffer@two-stages,Fail
 spec@nv_copy_image@nv_copy_image-formats --samples=8,Fail
 spec@nv_copy_image@nv_copy_image-formats --samples=8@Source: GL_ALPHA/Destination: GL_ALPHA,Fail
@@ -3204,3 +3211,5 @@ spec@arb_framebuffer_object@execution@msaa-alpha-to-coverage_alpha-to-one_write-
 KHR-GL30.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test,Fail
 KHR-GL31.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test,Fail
 KHR-GL32.framebuffer_blit.multisampled_to_singlesampled_blit_depth_config_test,Fail
+
+spec@arb_sample_shading@builtin-gl-sample-position 2,Fail
