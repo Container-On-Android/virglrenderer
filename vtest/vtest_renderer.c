@@ -69,7 +69,7 @@
 #include "util/libsync.h"
 #endif
 
-#ifdef ENABLE_LIBDRM
+#if defined(ENABLE_LIBDRM) && !IS_BIONIC
 #include <xf86drm.h>
 #endif
 

@@ -55,7 +55,7 @@ static struct virgl_glx *glx_info = NULL;
 int vrend_winsys_init(uint32_t flags, int preferred_fd)
 {
    if (flags & VIRGL_RENDERER_USE_EGL) {
-#ifdef ENABLE_GBM
+#if defined(ENABLE_GBM) && !IS_BIONIC
       /*
        * If the user specifies a preferred DRM fd and we can't use it, fail. If the user doesn't
        * specify an fd, it's possible to initialize EGL without one.
@@ -74,6 +74,13 @@ int vrend_winsys_init(uint32_t flags, int preferred_fd)
 
          return -1;
       }
+
+      use_context = CONTEXT_EGL;
+#elif IS_BIONIC
+      (void)preferred_fd;
+      egl = virgl_egl_init(NULL, flags & VIRGL_RENDERER_USE_SURFACELESS,
+                           flags & VIRGL_RENDERER_USE_GLES);
+      if (!egl) return -1;
 
       use_context = CONTEXT_EGL;
 #else

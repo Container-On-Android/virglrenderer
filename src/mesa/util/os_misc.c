@@ -54,9 +54,11 @@
 
 #if DETECT_OS_ANDROID
 #  define LOG_TAG "MESA"
-#  include <unistd.h>
-#  include <log/log.h>
-#  include <cutils/properties.h>
+#  include <android/log.h>
+#  include <sys/system_properties.h>
+#  define LOG_PRI(priority, tag, ...) __android_log_print(priority, tag, __VA_ARGS__)
+#  define PROPERTY_VALUE_MAX PROP_VALUE_MAX
+#  define PROPERTY_KEY_MAX PROP_NAME_MAX
 #elif DETECT_OS_LINUX || DETECT_OS_CYGWIN || DETECT_OS_SOLARIS || DETECT_OS_HURD
 #  include <unistd.h>
 #elif DETECT_OS_OPENBSD || DETECT_OS_FREEBSD
@@ -188,7 +190,7 @@ os_get_android_option(const char *name)
    }
 
    const char *opt = NULL;
-   int len = property_get(key, value, NULL);
+   int len = __system_property_get(key, value);
    if (len > 1) {
       opt = ralloc_strdup(options_tbl, value);
    }

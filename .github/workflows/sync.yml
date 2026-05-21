@@ -1,0 +1,52 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://gitlab.freedesktop.org/virgl/virglrenderer.git 2>/dev/null || true
+
+      - name: Fetch all sources
+        run: |
+          git fetch origin
+          git fetch upstream
+
+      - name: Create and push upstream branch
+        run: |
+          git checkout -B upstream upstream/main
+          
+          git push origin upstream --force
+          
+          git checkout main
+
+      - name: Sync with fork-sync action
+        uses: tgymnich/fork-sync@v2.0.10
+        with:
+          owner: Container-On-Android
+          base: main
+          head: upstream
+          pr_title: "Sync upstream changes"
+          pr_message: "Automated sync from upstream repository"
+          auto_merge: true
+          merge_method: rebase
+          ignore_fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,79 @@
+name: Android-arm64-Builds
+on:
+  workflow_dispatch:
+    inputs:
+      ndk_version:
+        description: 'Android NDK version'
+        required: false
+        default: 'r28c'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Android NDK
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: ${{ github.event.inputs.ndk_version || 'r28c' }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y -qq build-essential pipx python3-venv pkg-config cmake docbook2x \
+        python3-pip pipx jq
+        sudo npm install -g conventional-changelog-cli
+        conventional-changelog -o CHANGELOG.md -r 2
+        pipx ensurepath
+        pipx install meson==0.61
+        pipx install ninja
+
+    - name: Download Dependencies 
+      run: |
+        libepoxy=$(curl -s https://api.github.com/repos/DreamConnected/libepoxy-dev/releases/latest | grep browser_download_url | cut -d'"' -f4 |grep -E 'zip$')
+        libepoxy_file=$(curl -s https://api.github.com/repos/DreamConnected/libepoxy-dev/releases/latest | grep name | cut -d'"' -f4 |grep -E 'zip$')
+        wget -q ${libepoxy} && sudo unzip -q -o ${libepoxy_file} -d / && echo 1/1 ${libepoxy} ${libepoxy_file}
+        
+    - name: Build virglrenderer for Android
+      run: |
+        sed -i "s|android-ndk-r28c|$ANDROID_NDK_HOME|g" aarch64-android-api30.txt
+        export PKG_CONFIG_PATH=/data/share/lib/pkgconfig:/data/share/lib64/pkgconfig:$PKG_CONFIG_PATH
+
+        meson setup build \
+              -Dvenus=true \
+              -Dvulkan-dload=true \
+              -Dplatforms=egl \
+              -Dvideo=false \
+              -Drender-server-worker=thread \
+              -Ddrm-renderers= \
+              -Dtests=false \
+              -Dfuzzer=false \
+              -Dvalgrind=false \
+              -Dtracing=none \
+              --prefix=/data/share \
+              --cross-file=aarch64-android-api30.txt
+
+        meson compile -C build
+        sudo /usr/local/bin/ninja -C build install
+        echo "RELEASE_TAG=$(meson introspect meson.build --projectinfo | jq -r '.version')-$(git log -1 --format=%h)" >> $GITHUB_ENV
+
+    - name: Upload artifacts virglrenderer
+      uses: actions/upload-artifact@v4.3.1
+      with:
+        name: android-${{ github.event.inputs.target_arch || 'aarch64' }}-virglrenderer
+        path: /data/share/*
+
+    - name: Create a TAR file for artifact
+      run: |
+        tar -czvf android-${{ github.event.inputs.target_arch || 'aarch64' }}-api30-virglrenderer.tar.gz -C /data/share .
+    
+    - name: Create Release and Upload Release Asset
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        name: Release ${{ env.RELEASE_TAG }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+        files: |
+            android-${{ github.event.inputs.target_arch || 'aarch64' }}-api30-virglrenderer.tar.gz

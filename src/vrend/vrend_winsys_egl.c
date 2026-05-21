@@ -41,7 +41,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#ifdef ENABLE_LIBDRM
+#if defined(ENABLE_LIBDRM) && !IS_BIONIC
 #include <xf86drm.h>
 #endif
 

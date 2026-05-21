@@ -37,10 +37,13 @@ vtest_depends = [
    libvirglrenderer_dep,
    gallium_dep,
    thread_dep,
-   libdrm_dep,
    drm_uapi_dep,
    mesa_dep,
 ]
+
+if conf_data.get('IS_BIONIC') == false
+   virgl_depends += [libdrm_dep]
+endif
 
 if with_tracing == 'percetto'
    vtest_depends += [percetto_dep]
