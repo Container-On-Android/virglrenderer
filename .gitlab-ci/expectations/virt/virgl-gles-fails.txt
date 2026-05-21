@@ -3097,6 +3097,8 @@ KHR-GL30.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singles
 KHR-GL30.texture_lod_bias.texture_lod_bias_all,Fail
 KHR-GL31.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit,Fail
 KHR-GL32.framebuffer_blit.framebuffer_blit_functionality_multisampled_to_singlesampled_blit,Fail
+KHR-GL32.packed_depth_stencil.blit.depth24_stencil8,Fail
+KHR-GL32.packed_depth_stencil.blit.depth32f_stencil8,Fail
 KHR-GL32.texture_lod_bias.texture_lod_bias_all,Fail
 spec@!opengl 1.1@depthstencil-default_fb-blit samples=6,Fail
 spec@!opengl 1.1@depthstencil-default_fb-blit samples=8,Fail

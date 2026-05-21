@@ -9,6 +9,7 @@
 #include "vkr_common.h"
 
 struct gbm_bo;
+struct vkr_mtl_shm;
 
 struct vkr_device_memory {
    struct vkr_object base;
@@ -25,6 +26,9 @@ struct vkr_device_memory {
 
    /* udmabuf backing non-external mappable memory */
    int udmabuf_fd;
+
+   /* Metal buffer backed by POSIX shared memory */
+   struct vkr_mtl_shm *mtl_shm;
 
    uint64_t allocation_size;
    uint32_t memory_type_index;

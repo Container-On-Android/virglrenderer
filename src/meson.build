@@ -205,6 +205,9 @@ if with_venus
    virgl_sources += venus_sources
    virgl_sources += venus_codegen
    virgl_depends += [venus_dep]
+   if with_host_darwin
+      virgl_sources += ['venus/vkr_metal_helpers.m']
+   endif
 endif
 
 if with_drm_renderers
@@ -250,6 +253,7 @@ libvirgl = static_library(
    virgl_sources,
    include_directories: [inc_gallium, inc_configuration, 'venus', 'drm'],
    dependencies : [virgl_depends, drm_uapi_dep],
+   objc_args : ['-fno-objc-arc'],
 )
 
 libvirgl_inc = [

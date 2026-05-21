@@ -11,6 +11,7 @@
 #include "vkr_context.h"
 #include "vkr_descriptor_set.h"
 #include "vkr_device_memory.h"
+#include "vkr_metal_helpers.h"
 #include "vkr_physical_device.h"
 #include "vkr_queue.h"
 
@@ -130,6 +131,9 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
    /* append extensions for our own use */
    const char **exts = NULL;
    uint32_t ext_count = args->pCreateInfo->enabledExtensionCount;
+   ext_count += physical_dev->EXT_external_memory_metal;
+   ext_count += physical_dev->EXT_metal_objects;
+   ext_count += physical_dev->KHR_portability_subset;
    ext_count += physical_dev->KHR_external_memory_fd;
    ext_count += physical_dev->EXT_external_memory_dma_buf;
    ext_count += physical_dev->KHR_external_fence_fd;
@@ -139,10 +143,17 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
          args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
          return;
       }
-      for (uint32_t i = 0; i < args->pCreateInfo->enabledExtensionCount; i++)
-         exts[i] = args->pCreateInfo->ppEnabledExtensionNames[i];
 
-      ext_count = args->pCreateInfo->enabledExtensionCount;
+      ext_count = 0;
+      for (uint32_t i = 0; i < args->pCreateInfo->enabledExtensionCount; i++)
+         exts[ext_count++] = args->pCreateInfo->ppEnabledExtensionNames[i];
+
+      if (physical_dev->EXT_external_memory_metal)
+         exts[ext_count++] = "VK_EXT_external_memory_metal";
+      if (physical_dev->EXT_metal_objects)
+         exts[ext_count++] = "VK_EXT_metal_objects";
+      if (physical_dev->KHR_portability_subset)
+         exts[ext_count++] = "VK_KHR_portability_subset";
       if (physical_dev->KHR_external_memory_fd)
          exts[ext_count++] = "VK_KHR_external_memory_fd";
       if (physical_dev->EXT_external_memory_dma_buf)
@@ -176,6 +187,10 @@ vkr_dispatch_vkCreateDevice(struct vn_dispatch_context *dispatch,
    vkr_device_init_proc_table(dev, physical_dev->api_version,
                               args->pCreateInfo->ppEnabledExtensionNames,
                               args->pCreateInfo->enabledExtensionCount);
+
+   if (physical_dev->EXT_external_memory_metal)
+      dev->mtl_device =
+         vkr_metal_get_device(dev->base.handle.device, vk->GetDeviceProcAddr);
 
    free(exts);
 

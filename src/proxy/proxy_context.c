@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "server/render_protocol.h"
@@ -310,10 +311,14 @@ validate_resource_fd_shm(int fd, uint64_t expected_size)
    }
 #endif
 
-   const uint64_t size = lseek(fd, 0, SEEK_END);
-   if (size != expected_size) {
-      proxy_log("failed to validate shm size(%" PRIu64 ") expected(%" PRIu64 ")", size,
-                expected_size);
+   struct stat st;
+   if (fstat(fd, &st) < 0) {
+      proxy_log("failed to fstat shm fd");
+      return false;
+   }
+   if ((uint64_t)st.st_size < expected_size) {
+      proxy_log("shm size(%" PRIu64 ") smaller than expected(%" PRIu64 ")",
+                (uint64_t)st.st_size, expected_size);
       return false;
    }
 

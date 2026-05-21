@@ -54,6 +54,9 @@ if cc.get_id() == 'gcc' and cc.version().version_compare('< 4.1')
   error('When using GCC, version 4.1 or later is required.')
 endif
 
+with_host_windows = host_machine.system() == 'windows'
+with_host_darwin = host_machine.system() == 'darwin'
+
 warnings = [
    '-Werror=enum-int-mismatch',
    '-Werror=implicit-function-declaration',
@@ -78,9 +81,6 @@ flags = [
 add_project_arguments(cc.get_supported_arguments(flags), language : 'c')
 
 prog_python = import('python').find_installation('python3')
-
-with_host_windows = host_machine.system() == 'windows'
-with_host_darwin = host_machine.system() == 'darwin'
 
 not_found = dependency('', required: false)
 gbm_dep = not_found
@@ -362,6 +362,13 @@ with_venus = get_option('venus')
 with_render_server = with_venus
 with_render_server_worker = get_option('render-server-worker')
 render_server_install_dir = get_option('prefix') / get_option('libexecdir')
+if with_venus and with_host_darwin
+   add_languages('objc', required: true)
+   objcc = meson.get_compiler('objc')
+   add_project_arguments(objcc.get_supported_arguments(warnings), language : 'objc')
+   add_project_arguments(objcc.get_supported_arguments(flags), language : 'objc')
+endif
+
 if with_venus
    venus_dep = []
    if get_option('vulkan-dload')
@@ -380,7 +387,11 @@ if with_venus
 
    if with_host_darwin
       venus_dep += declare_dependency(
-         compile_args : ['-DVK_USE_PLATFORM_METAL_EXT'],
+         compile_args : ['-DVK_USE_PLATFORM_METAL_EXT', '-DVK_ENABLE_BETA_EXTENSIONS'],
+         dependencies : [
+            dependency('appleframeworks', modules: ['Metal'], required: true),
+            dependency('appleframeworks', modules: ['Foundation'], required: true),
+         ],
       )
    endif
 
@@ -437,6 +448,10 @@ configure_file(input : 'config.h.meson',
 
 add_project_arguments('-imacros', meson.current_build_dir() / 'config.h', language : 'c')
 add_project_arguments('-DHAVE_CONFIG_H=1', language : 'c')
+if with_venus and with_host_darwin
+   add_project_arguments('-imacros', meson.current_build_dir() / 'config.h', language : 'objc')
+   add_project_arguments('-DHAVE_CONFIG_H=1', language : 'objc')
+endif
 
 inc_configuration = include_directories(['.', 'src'])
 

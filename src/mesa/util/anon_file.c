@@ -29,12 +29,14 @@
 
 #include "anon_file.h"
 
-#include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#if defined(HAVE_MEMFD_CREATE) || defined(__FreeBSD__) || defined(__OpenBSD__)
+#if defined(HAVE_MEMFD_CREATE) || defined(__FreeBSD__) ||                      \
+    defined(__OpenBSD__) || defined(__APPLE__)
 #include <sys/mman.h>
 #elif defined(__ANDROID__)
 #include <sys/syscall.h>
@@ -43,7 +45,8 @@
 #include <stdio.h>
 #endif
 
-#if !(defined(__FreeBSD__) || defined(HAVE_MEMFD_CREATE) || defined(HAVE_MKOSTEMP) || defined(__ANDROID__))
+#if !(defined(__FreeBSD__) || defined(HAVE_MEMFD_CREATE) ||                    \
+      defined(HAVE_MKOSTEMP) || defined(__ANDROID__) || defined(__APPLE__))
 static int
 set_cloexec_or_close(int fd)
 {
@@ -67,7 +70,8 @@ err:
 }
 #endif
 
-#if !(defined(__FreeBSD__) || defined(HAVE_MEMFD_CREATE) || defined(__ANDROID__))
+#if !(defined(__FreeBSD__) || defined(HAVE_MEMFD_CREATE) ||                    \
+      defined(__ANDROID__) || defined(__APPLE__))
 static int
 create_tmpfile_cloexec(char *tmpname)
 {
@@ -124,6 +128,22 @@ os_create_anonymous_file(off_t size, const char *debug_name)
    fd = syscall(SYS_memfd_create, debug_name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
 #elif defined(__FreeBSD__)
    fd = shm_open(SHM_ANON, O_CREAT | O_RDWR | O_CLOEXEC, 0600);
+#elif defined(__APPLE__)
+   const char *tag = (debug_name && debug_name[0]) ? debug_name : "mesa";
+   const unsigned int nonce = arc4random();
+   for (unsigned int i = 0; i < 32; i++) {
+     char shm_name[64];
+     snprintf(shm_name, sizeof(shm_name), "/%s-%d-%x-%x", tag, getpid(), nonce,
+              i);
+     fd = shm_open(shm_name, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+     if (fd >= 0) {
+       shm_unlink(shm_name);
+       break;
+     }
+
+     if (errno != EEXIST)
+       break;
+   }
 #elif defined(__OpenBSD__)
    char template[] = "/tmp/mesa-XXXXXXXXXX";
    fd = shm_mkstemp(template);

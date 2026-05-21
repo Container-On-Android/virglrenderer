@@ -7570,7 +7570,8 @@ static void emit_ios_tcs(const struct dump_ctx *ctx,
                                               ctx->separable_program);
          } else
             emit_ios_generic(ctx, glsl_strbufs, generic_ios, texcoord_ios, io_out, "", &ctx->outputs[i], "out", "[]");
-      } else if (ctx->outputs[i].invariant || ctx->outputs[i].precise) {
+      } else if ((ctx->outputs[i].invariant || ctx->outputs[i].precise) &&
+                 !ctx->outputs[i].glsl_gl_block) {
          emit_hdrf(glsl_strbufs, "%s%s;\n",
                    ctx->outputs[i].precise ? "precise " :
                    (ctx->outputs[i].invariant ? "invariant " : ""),

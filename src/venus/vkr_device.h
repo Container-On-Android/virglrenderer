@@ -26,6 +26,8 @@ struct vkr_device {
 
    mtx_t object_mutex;
    struct list_head objects;
+
+   void *mtl_device;
 };
 VKR_DEFINE_OBJECT_CAST(device, VK_OBJECT_TYPE_DEVICE, VkDevice)
 

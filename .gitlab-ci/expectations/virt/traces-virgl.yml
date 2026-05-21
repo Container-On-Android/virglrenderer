@@ -18,7 +18,7 @@ traces:
       checksum: 7691e87a06e5c8baf9e0c0ca6381775b
   0ad/0ad-v2.trace:
     gl-virgl:
-      checksum: 6379222413b517861b70e2550337795e
+      checksum: 9c91dc2a05e140f8233e7f5f3a4b4f11
   gputest/gimark-v2.trace:
     gl-virgl:
       label: [crash]
@@ -30,7 +30,7 @@ traces:
       checksum: 837b834310e2e6bd784e3202c6c0bed7
   gputest/pixmark-volplosion-v2.trace:
     gl-virgl:
-      checksum: d006b8b713db2dc0a968d95dd4ff10b7
+      checksum: bcaa3938ca6cdc3a6ac0f4da518ff9a9
   gputest/plot3d-v2.trace:
     gl-virgl:
       checksum: c4a35b0635bbe3fd6693c33814ff5059
@@ -45,7 +45,7 @@ traces:
       checksum: fd4fadc9c537e0f10f82c767fc95ff5e
   humus/DynamicBranching3-v2.trace:
     gl-virgl:
-      checksum: b96191174fc9487a8b399fad734cd2e7
+      checksum: 401178849862615598c7962f0d497e20
   humus/HDR-v2.trace:
     gl-virgl:
       checksum: a81ae5282a5d2612f05fc4da2c84e7a0
@@ -81,10 +81,10 @@ traces:
       checksum: 67161dca3527e5769bc02d84bb9a7bce
   supertuxkart/supertuxkart-mansion-egl-gles-v2.trace:
     gl-virgl:
-      checksum: 1f3b873a320587256d7392ddc8162ae2
+      checksum: 0809d2721da25b08f71ab361dac75a7d
   xonotic/xonotic-keybench-high-v2.trace:
     gl-virgl:
-      checksum: 2d2f319615062eb7cc10dfa8d7a66333
+      checksum: dc84733cd92584b50dcb7f6b9e57ccce
   valve/counterstrike-v2.trace:
     gl-virgl:
       checksum: 0d32696d18e2cea024a11c252e059002
@@ -94,10 +94,10 @@ traces:
       label: [skip, flakes]
   valve/half-life-2-v2.trace:
     gl-virgl:
-      checksum: 4299337c370be2523421d17cab387778
+      checksum: f88af44c333473dd37661a3da0708226
   valve/portal-2-v2.trace:
     gl-virgl:
-      checksum: 8974f30da49259a3e5f9ff268e366787
+      checksum: 6a793fde53b7d43e28805cfbd48996fa
   supertuxkart/supertuxkart-antediluvian-abyss.rdc:
     gl-virgl:
       label: [crash]
@@ -109,7 +109,7 @@ traces:
       label: [crash]
   godot/Material Testers.x86_64_2020.04.08_13.38_frame799.rdc:
     gl-virgl:
-      checksum: 9855a7ccdab2cd66a59964aba43bf7df
+      checksum: 7ba4f0c52a719d94b805653d31ce22d7
   ror/ror-default.trace:
     gl-virgl:
       label: [crash]
