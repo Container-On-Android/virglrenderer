@@ -39,11 +39,11 @@ fail:
 void
 proxy_renderer_fini(void)
 {
-   if (proxy_renderer.server)
-      proxy_server_destroy(proxy_renderer.server);
-
    if (proxy_renderer.client)
       proxy_client_destroy(proxy_renderer.client);
+
+   if (proxy_renderer.server)
+      proxy_server_destroy(proxy_renderer.server);
 
    memset(&proxy_renderer, 0, sizeof(struct proxy_renderer));
 }

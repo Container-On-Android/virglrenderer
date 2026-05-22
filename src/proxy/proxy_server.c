@@ -45,6 +45,7 @@ proxy_server_destroy(struct proxy_server *srv)
    free(srv);
 }
 
+#ifndef ENABLE_SAME_PROCESS_RENDER_SERVER
 static bool
 proxy_server_fork(struct proxy_server *srv)
 {
@@ -104,7 +105,8 @@ proxy_server_init_fd(struct proxy_server *srv)
    return true;
 }
 
-#ifdef ENABLE_SAME_PROCESS_RENDER_SERVER
+#else  /* ENABLE_SAME_PROCESS_RENDER_SERVER */
+
 static int
 proxy_server_start_thread(void *args)
 {
@@ -119,7 +121,10 @@ proxy_server_start_thread(void *args)
    };
    struct render_context_args ctx_args;
 
-   bool ok = render_server_main(3, argv, &ctx_args);
+   /* must reset the global getopt index */
+   optind = 1;
+
+   bool ok = render_server_main(ARRAY_SIZE(argv) - 1, argv, &ctx_args);
 
    return ok ? 0 : -1;
 }
@@ -133,9 +138,10 @@ proxy_server_init_thread(struct proxy_server *srv)
       return false;
 
    const int client_fd = socket_fds[0];
-   const uintptr_t remote_fd = socket_fds[1];
+   const int remote_fd = socket_fds[1];
 
-   bool ok = thrd_create(&srv->thread, proxy_server_start_thread, (void *)remote_fd) == thrd_success;
+   bool ok = thrd_create(&srv->thread, proxy_server_start_thread,
+                         (void *)(uintptr_t)remote_fd) == thrd_success;
 
    if (ok) {
       srv->client_fd = client_fd;
@@ -146,7 +152,7 @@ proxy_server_init_thread(struct proxy_server *srv)
 
    return ok;
 }
-#endif
+#endif /* ENABLE_SAME_PROCESS_RENDER_SERVER */
 
 struct proxy_server *
 proxy_server_create(void)
