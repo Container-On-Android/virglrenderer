@@ -101,4 +101,6 @@ bool virgl_egl_win32_create_d3d11_texture2d(struct virgl_egl *egl,
 EGLImageKHR virgl_egl_win32_image_from_d3d11_texture2d(struct virgl_egl *egl, ID3D11Texture2D *tex);
 #endif
 
+int virgl_egl_open_drm_fd(struct virgl_egl *egl);
+
 #endif

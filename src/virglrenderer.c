@@ -207,6 +207,18 @@ static void per_context_fence_retire(struct virgl_context *ctx,
                                   fence_id);
 }
 
+static int get_drm_fd(void)
+{
+   if (state.cbs->version >= 2 && state.cbs->get_drm_fd)
+      return state.cbs->get_drm_fd(state.cookie);
+
+#ifdef HAVE_EPOXY_EGL_H
+   return virgl_egl_open_drm_fd(egl);
+#else
+   return -1;
+#endif
+}
+
 int virgl_renderer_context_create_with_flags(uint32_t ctx_id,
                                              uint32_t ctx_flags,
                                              uint32_t nlen,
@@ -246,10 +258,7 @@ int virgl_renderer_context_create_with_flags(uint32_t ctx_id,
    case VIRTGPU_DRM_CAPSET_DRM:
       if (!state.drm_initialized)
          return EINVAL;
-      if (state.cbs->version >= 2 && state.cbs->get_drm_fd)
-         ctx = drm_renderer_create(nlen, name, state.cbs->get_drm_fd(state.cookie));
-      else
-         ctx = drm_renderer_create(nlen, name, -1);
+      ctx = drm_renderer_create(nlen, name, get_drm_fd());
       break;
    default:
       return EINVAL;
@@ -689,14 +698,6 @@ static int make_current_surfaceless(virgl_renderer_gl_context ctx)
    return 0;
 }
 
-static int get_drm_fd(void)
-{
-   if (state.cbs->get_drm_fd)
-      return state.cbs->get_drm_fd(state.cookie);
-
-   return -1;
-}
-
 static const struct vrend_if_cbs vrend_cbs = {
    ctx0_fence_retire,
    create_gl_context,
@@ -939,10 +940,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
 
    if ((flags & VIRGL_RENDERER_ASYNC_FENCE_CB) &&
        (flags & VIRGL_RENDERER_DRM)) {
-      int drm_fd = -1;
-
-      if (cbs->version >= 2 && cbs->get_drm_fd)
-         drm_fd = cbs->get_drm_fd(cookie);
+      int drm_fd = get_drm_fd();
 
       ret = drm_renderer_init(drm_fd);
       if (ret) {

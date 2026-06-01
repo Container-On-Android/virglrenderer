@@ -605,7 +605,7 @@ struct virgl_egl *virgl_egl_init_external(EGLDisplay egl_display)
       goto fail;
 
 #ifdef ENABLE_GBM
-   gbm = virgl_gbm_init(-1);
+   gbm = virgl_gbm_init( virgl_egl_open_drm_fd(egl) );
    egl->gbm = gbm;
 #endif
 
@@ -1019,4 +1019,77 @@ const char *virgl_egl_error_string(EGLint error)
 #undef CASE_STR
     default: return "Unknown error";
     }
+}
+
+int virgl_egl_open_drm_fd(struct virgl_egl *egl)
+{
+#if DETECT_OS_WINDOWS
+   return -1;
+#else
+   const char *drm_path = NULL;
+   EGLDeviceEXT device;
+
+   if (!egl || !egl->funcs.eglQueryDisplayAttrib || !egl->funcs.eglQueryDeviceString)
+      return -1;
+
+   if (!egl->funcs.eglQueryDisplayAttrib(egl->egl_display, EGL_DEVICE_EXT, (EGLAttrib *)&device))
+      return -1;
+
+#ifdef EGL_DRM_RENDER_NODE_FILE_EXT
+   drm_path = egl->funcs.eglQueryDeviceString(device,
+                                              EGL_DRM_RENDER_NODE_FILE_EXT);
+#endif
+
+#ifdef EGL_DRM_DEVICE_FILE_EXT
+   if (!drm_path) {
+      drm_path = egl->funcs.eglQueryDeviceString(device,
+                                                 EGL_DRM_DEVICE_FILE_EXT);
+
+#ifdef ENABLE_LIBDRM
+      if (drm_path) {
+         int fd = open(drm_path, O_RDWR | O_CLOEXEC);
+
+         /*
+          * EGL_DRM_RENDER_NODE_FILE_EXT may not be defined by the epoxy version
+          * we build against, or the EGL driver may not implement it, in which
+          * case drm_path above falls back to EGL_DRM_DEVICE_FILE_EXT, i.e. the
+          * DRM primary/master node. Rendering on a primary node requires DRM
+          * master/auth and some kernel drivers (e.g. amdgpu) reject rendering
+          * ioctls on it, so resolve and switch to the render node of the same
+          * GPU whenever libdrm can tell us its path.
+          */
+         drmDevicePtr drm_device;
+         if (drmGetDevice2(fd, 0, &drm_device) == 0) {
+            int render_fd = -1;
+
+            if ((drm_device->available_nodes & (1 << DRM_NODE_RENDER)) &&
+                drm_device->nodes[DRM_NODE_RENDER]) {
+               render_fd = open(drm_device->nodes[DRM_NODE_RENDER],
+                                O_RDWR | O_CLOEXEC);
+
+               virgl_debug("%s: using render node %s\n",
+                           __func__, drm_device->nodes[DRM_NODE_RENDER]);
+            }
+
+            drmFreeDevice(&drm_device);
+
+            if (render_fd >= 0) {
+               close(fd);
+               return render_fd;
+            }
+         }
+
+         close(fd);
+      }
+#endif
+   }
+#endif
+
+   if (!drm_path)
+      return -1;
+
+   virgl_debug("%s: %s\n", __func__, drm_path);
+
+   return open(drm_path, O_RDWR | O_CLOEXEC);
+#endif
 }
