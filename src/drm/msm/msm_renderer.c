@@ -582,6 +582,14 @@ msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
       return -EINVAL;
    }
 
+   if (iocnr == DRM_MSM_SUBMITQUEUE_NEW) {
+      struct drm_msm_submitqueue *args = (void *)req->payload;
+      if (args->prio >= nr_timelines) {
+         drm_err("invalid ring_idx: %" PRIu32, args->prio);
+         return -EINVAL;
+      }
+   }
+
    struct msm_ccmd_ioctl_simple_rsp *rsp;
    size_t rsp_len = sizeof(*rsp);
 
@@ -855,7 +863,11 @@ msm_ccmd_gem_submit(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
          goto out;
       }
 
-      unsigned prio = (uintptr_t)entry->data;
+      uintptr_t prio = (uintptr_t)entry->data;
+      if (prio >= nr_timelines) {
+         drm_err("invalid priority %zu", (size_t)prio);
+         goto out;
+      }
 
       drm_timeline_set_last_fence_fd(&mctx->timelines[prio], args.fence_fd);
    }
