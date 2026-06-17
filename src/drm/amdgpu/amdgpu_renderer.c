@@ -1171,8 +1171,10 @@ amdgpu_renderer_submit_fence(struct virgl_context *vctx, uint32_t flags,
    struct amdgpu_context *ctx = to_amdgpu_context(dctx);
 
    /* timeline is ring_idx-1 (because ring_idx 0 is host CPU timeline) */
-   if (ring_idx > AMDGPU_HW_IP_NUM) {
-      print(0, "invalid ring_idx: %u", ring_idx);
+   if (ring_idx > ctx->timeline_count) {
+      print(0, "Invalid ring_idx value: %" PRIu32
+            " (must be in [0, %" PRIu32 "] range)",
+            ring_idx, ctx->timeline_count);
       return -EINVAL;
    }
    /* ring_idx zero is used for the guest to synchronize with host CPU,
