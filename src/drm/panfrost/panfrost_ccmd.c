@@ -20,9 +20,14 @@ panfrost_ccmd_submit(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
    struct panfrost_ccmd_submit_req *req = to_panfrost_ccmd_submit_req(hdr);
    struct panfrost_context *pan_ctx = to_panfrost_context(dctx);
    uint32_t *res = (uint32_t *) &req->payload;
-   uint32_t bo_handlers[req->res_id_count];
    int ret, out_sync_fd, in_fence_fd;
    uint32_t in_sync = 0;
+
+   /* Avoid allocating too much stack memory. */
+   if (req->res_id_count > 128) {
+      drm_err("Too many resource IDs: %" PRIu32, req->res_id_count);
+      return -EINVAL;
+   }
 
    /* Avoid reading past the end of the request. */
    size_t min_size = size_add(offsetof(typeof(*req), payload),
@@ -33,6 +38,7 @@ panfrost_ccmd_submit(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
       return -EINVAL;
    }
 
+   uint32_t bo_handlers[req->res_id_count];
    for (size_t i = 0; i < req->res_id_count; i++) {
       struct panfrost_object *pan_obj = panfrost_get_object_from_res_id(pan_ctx, res[i]);
       if (!pan_obj) {
