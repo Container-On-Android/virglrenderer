@@ -24,6 +24,15 @@ panfrost_ccmd_submit(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
    int ret, out_sync_fd, in_fence_fd;
    uint32_t in_sync = 0;
 
+   /* Avoid reading past the end of the request. */
+   size_t min_size = size_add(offsetof(typeof(*req), payload),
+                              size_mul(sizeof(*req->payload), req->res_id_count));
+   if (min_size > hdr->len) {
+      drm_err("res_id_count %" PRIu32 " requires %zu payload bytes, but only "
+              "received %" PRIu32, req->res_id_count, min_size, hdr->len);
+      return -EINVAL;
+   }
+
    for (size_t i = 0; i < req->res_id_count; i++) {
       struct panfrost_object *pan_obj = panfrost_get_object_from_res_id(pan_ctx, res[i]);
       if (!pan_obj) {
