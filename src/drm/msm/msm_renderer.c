@@ -518,6 +518,11 @@ msm_ccmd_nop(UNUSED struct drm_context *dctx, UNUSED struct vdrm_ccmd_req *hdr)
    return 0;
 }
 
+#define ENDOF(type, field)                                                    \
+   (1 ? (offsetof(struct type, field) + sizeof(((struct type *)0)->field))    \
+      /* to catch passing non-identifiers */                                  \
+      : sizeof(struct { char _type_##type##0; char _field_##field##0; }))
+
 static int
 msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 {
@@ -546,13 +551,34 @@ msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 
    /* Allow-list of supported ioctls: */
    unsigned iocnr = _IOC_NR(req->cmd) - DRM_COMMAND_BASE;
+   unsigned direction = _IOC_READ|_IOC_WRITE;
+   size_t min_size;
+
    switch (iocnr) {
    case DRM_MSM_GET_PARAM:
+      min_size = ENDOF(drm_msm_param, value);
+      break;
    case DRM_MSM_SUBMITQUEUE_NEW:
+      min_size = ENDOF(drm_msm_submitqueue, id);
+      break;
    case DRM_MSM_SUBMITQUEUE_CLOSE:
+      min_size = sizeof(uint32_t);
+      direction = _IOC_WRITE;
       break;
    default:
       drm_err("invalid ioctl: %08x (%u)", req->cmd, iocnr);
+      return -EINVAL;
+   }
+
+   if (payload_len < min_size) {
+      drm_err("ioctl %u needs min payload len %zu (got %u)",
+              iocnr, min_size, payload_len);
+      return -EINVAL;
+   }
+
+   if (_IOC_DIR(req->cmd) != direction) {
+      drm_err("ioctl %u needs direction %u, got %u",
+              iocnr, direction, _IOC_DIR(req->cmd));
       return -EINVAL;
    }
 
