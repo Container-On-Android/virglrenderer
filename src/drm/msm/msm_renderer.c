@@ -351,13 +351,13 @@ msm_renderer_attach_resource(struct virgl_context *vctx, struct virgl_resource *
          close(fd);
          if (size < 0) {
             drm_err("lseek failed: %" PRId64 " (%s)", size, strerror(errno));
-            gem_close(fd, handle);
+            gem_close(dctx->fd, handle);
             return;
          }
 
          obj = msm_object_create(handle, 0, size);
          if (!obj) {
-            gem_close(fd, handle);
+            gem_close(dctx->fd, handle);
             return;
          }
 
