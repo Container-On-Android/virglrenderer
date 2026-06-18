@@ -45,13 +45,13 @@ panfrost_renderer_attach_resource(struct virgl_context *vctx, struct virgl_resou
          close(fd);
          if (size < 0) {
             drm_err("lseek failed: %" PRId64 " (%s)", size, strerror(errno));
-            drmCloseBufferHandle(fd, handle);
+            drmCloseBufferHandle(dctx->fd, handle);
             return;
          }
 
          struct panfrost_object *obj = panfrost_object_create(handle, size, 0, 0);
          if (!obj) {
-            drmCloseBufferHandle(fd, handle);
+            drmCloseBufferHandle(dctx->fd, handle);
             return;
          }
 
