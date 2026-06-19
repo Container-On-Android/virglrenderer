@@ -7504,6 +7504,7 @@ static enum virgl_resource_fd_type vrend_pipe_resource_export_fd(UNUSED struct p
    struct vrend_resource *res = (struct vrend_resource *)pres;
 
    if (res->storage_bits & VREND_STORAGE_GBM_BUFFER) {
+      assert(res->gbm_bo != NULL);
       int ret = virgl_gbm_export_fd(gbm->device,
                                     gbm_bo_get_handle(res->gbm_bo).u32, fd);
       if (!ret)
@@ -8644,6 +8645,7 @@ static void vrend_resource_gbm_init(struct vrend_resource *gr, uint32_t format)
    gr->egl_image = virgl_egl_image_from_gbm_bo(egl, bo);
    if (!gr->egl_image) {
       gr->gbm_bo = NULL;
+      gr->storage_bits &= ~VREND_STORAGE_GBM_BUFFER;
       gbm_bo_destroy(bo);
       return;
    }
