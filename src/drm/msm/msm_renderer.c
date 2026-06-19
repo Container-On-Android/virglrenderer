@@ -537,6 +537,13 @@ msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
       return -EINVAL;
    }
 
+   /* Only allow DRM ioctls: */
+   if (_IOC_TYPE(req->cmd) != DRM_IOCTL_BASE) {
+      drm_err("wrong ioctl type: %u != %u", _IOC_TYPE(req->cmd),
+              DRM_IOCTL_BASE);
+      return -EINVAL;
+   }
+
    /* Allow-list of supported ioctls: */
    unsigned iocnr = _IOC_NR(req->cmd) - DRM_COMMAND_BASE;
    switch (iocnr) {
