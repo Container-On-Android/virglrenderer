@@ -486,6 +486,8 @@ amdgpu_ccmd_query_info(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 
    size_t return_size = req->info.return_size;
    void *value = calloc(return_size, 1);
+   if (!value)
+      return -ENOMEM;
    struct drm_amdgpu_info request;
    memcpy(&request, &req->info, sizeof(request));
    request.return_pointer = (uintptr_t)value;
