@@ -462,6 +462,8 @@ amdgpu_renderer_get_blob(struct virgl_context *vctx, uint32_t res_id, uint64_t b
    return 0;
 }
 
+#define MAX_SIZE (1U << 20)
+
 static int
 amdgpu_ccmd_query_info(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 {
@@ -469,9 +471,11 @@ amdgpu_ccmd_query_info(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
    struct amdgpu_context *ctx = to_amdgpu_context(dctx);
    struct amdgpu_ccmd_query_info_rsp *rsp;
    unsigned rsp_len;
-   if (__builtin_add_overflow(sizeof(*rsp), req->info.return_size, &rsp_len)) {
-      print(1, "%s: Request size overflow: %zu + %u > %u",
-            __FUNCTION__, sizeof(*rsp), req->info.return_size, UINT_MAX);
+   if (__builtin_add_overflow(sizeof(*rsp), req->info.return_size, &rsp_len) ||
+       rsp_len > MAX_SIZE || req->info.return_size > MAX_SIZE) {
+      print(1, "%s: Request or response size too large: %zu + %u > %u or %" PRIu32 " > %u",
+            __FUNCTION__, sizeof(*rsp), req->info.return_size, MAX_SIZE,
+            req->info.return_size, MAX_SIZE);
       return -EINVAL;
    }
 
