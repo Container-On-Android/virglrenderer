@@ -526,7 +526,7 @@ msm_ccmd_nop(UNUSED struct drm_context *dctx, UNUSED struct vdrm_ccmd_req *hdr)
 static int
 msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 {
-   const struct msm_ccmd_ioctl_simple_req *req = to_msm_ccmd_ioctl_simple_req(hdr);
+   struct msm_ccmd_ioctl_simple_req *req = to_msm_ccmd_ioctl_simple_req(hdr);
    unsigned payload_len = _IOC_SIZE(req->cmd);
    size_t req_len = size_add(sizeof(*req), payload_len);
    struct msm_context *mctx = to_msm_context(dctx);
@@ -601,19 +601,13 @@ msm_ccmd_ioctl_simple(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
    if (!rsp)
       return -ENOMEM;
 
-   /* Copy the payload because the kernel can write (if IOC_OUT bit
-    * is set) and to avoid casting away the const:
-    */
-   char payload[payload_len];
-   memcpy(payload, req->payload, payload_len);
-
-   rsp->ret = drmIoctl(dctx->fd, req->cmd, payload);
+   rsp->ret = drmIoctl(dctx->fd, req->cmd, req->payload);
 
    if (req->cmd & IOC_OUT)
-      memcpy(rsp->payload, payload, payload_len);
+      memcpy(rsp->payload, req->payload, payload_len);
 
    if (iocnr == DRM_MSM_SUBMITQUEUE_NEW && !rsp->ret) {
-      struct drm_msm_submitqueue *args = (void *)payload;
+      struct drm_msm_submitqueue *args = (void *)req->payload;
 
       drm_dbg("submitqueue %u, prio %u", args->id, args->prio);
 
