@@ -806,7 +806,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
    if (state.client_initialized && (state.cookie != cookie ||
                                     state.flags != flags ||
                                     state.cbs != cbs)) {
-      virgl_error("renderer already initialized");
+      virgl_error("renderer already initialized\n");
       return -EBUSY;
    }
 
@@ -814,7 +814,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       if (!cbs ||
           cbs->version < 1 ||
           cbs->version > VIRGL_RENDERER_CALLBACKS_VERSION) {
-         virgl_error("invalid renderer callbacks");
+         virgl_error("invalid renderer callbacks\n");
          return -1;
       }
 
@@ -831,7 +831,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
 
       ret = virgl_resource_table_init(pipe_cbs);
       if (ret) {
-         virgl_error("failed to initialize virgl resources");
+         virgl_error("failed to initialize virgl resources\n");
          goto fail;
       }
       state.resource_initialized = true;
@@ -840,7 +840,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
    if (!state.context_initialized) {
       ret = virgl_context_table_init();
       if (ret) {
-         virgl_error("failed to initialize virgl context");
+         virgl_error("failed to initialize virgl context\n");
          goto fail;
       }
       state.context_initialized = true;
@@ -859,7 +859,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       if (ret) {
          if (drm_fd >= 0)
             close(drm_fd);
-         virgl_error("failed to initialize vrend winsys");
+         virgl_error("failed to initialize vrend winsys\n");
          goto fail;
       }
       state.winsys_initialized = true;
@@ -871,7 +871,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
 
       if (!cbs->create_gl_context || !cbs->destroy_gl_context ||
           !cbs->make_current) {
-         virgl_error("invalid renderer gl callbacks");
+         virgl_error("invalid renderer gl callbacks\n");
          ret = EINVAL;
          goto fail;
       }
@@ -879,14 +879,14 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       egl_display = state.cbs->get_egl_display(cookie);
 
       if (!egl_display) {
-         virgl_error("failed to get egl display");
+         virgl_error("failed to get egl display\n");
          ret = -1;
          goto fail;
       }
       ret = vrend_winsys_init_external(egl_display);
 
       if (ret) {
-         virgl_error("failed to initialize vrend winsys");
+         virgl_error("failed to initialize vrend winsys\n");
          ret = -1;
          goto fail;
       }
@@ -898,7 +898,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
       uint32_t renderer_flags = 0;
 
       if (!cookie || !cbs) {
-         virgl_error("invalid renderer vrend callbacks");
+         virgl_error("invalid renderer vrend callbacks\n");
          ret = -1;
          goto fail;
       }
@@ -922,7 +922,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
 
       ret = vrend_renderer_init(&vrend_cbs, renderer_flags);
       if (ret) {
-         virgl_error("failed to initialize vrend renderer");
+         virgl_error("failed to initialize vrend renderer\n");
          goto fail;
       }
       state.vrend_initialized = true;
@@ -931,7 +931,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
    if (!state.proxy_initialized && (flags & VIRGL_RENDERER_RENDER_SERVER)) {
       ret = proxy_renderer_init(&proxy_cbs, flags | VIRGL_RENDERER_NO_VIRGL);
       if (ret) {
-         virgl_error("failed to initialize venus renderer");
+         virgl_error("failed to initialize venus renderer\n");
          goto fail;
       }
       state.proxy_initialized = true;
@@ -946,7 +946,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
 
       ret = drm_renderer_init(drm_fd);
       if (ret) {
-         virgl_error("failed to initialize drm renderer");
+         virgl_error("failed to initialize drm renderer\n");
          goto fail;
       }
       state.drm_initialized = true;
@@ -955,7 +955,7 @@ int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks
    if (!state.fence_initialized) {
       ret = virgl_fence_table_init();
       if (ret) {
-         virgl_error("failed to initialize fence table");
+         virgl_error("failed to initialize fence table\n");
          goto fail;
       }
       state.fence_initialized = true;

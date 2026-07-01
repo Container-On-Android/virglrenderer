@@ -135,8 +135,11 @@ os_create_anonymous_file(off_t size, const char *debug_name)
      char shm_name[64];
      snprintf(shm_name, sizeof(shm_name), "/%s-%d-%x-%x", tag, getpid(), nonce,
               i);
-     fd = shm_open(shm_name, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC, 0600);
+     /* macOS shm_open() rejects O_CLOEXEC with EINVAL; set close-on-exec
+      * explicitly afterwards instead. */
+     fd = shm_open(shm_name, O_CREAT | O_EXCL | O_RDWR, 0600);
      if (fd >= 0) {
+       fcntl(fd, F_SETFD, FD_CLOEXEC);
        shm_unlink(shm_name);
        break;
      }

@@ -52,13 +52,28 @@ drm_context_unmap_shmem_blob(struct drm_context *dctx)
    if (!dctx->shmem)
       return;
 
-   uint32_t blob_size = dctx->rsp_mem_sz + dctx->shmem->rsp_mem_offset;
-
-   munmap(dctx->shmem, blob_size);
+   munmap(dctx->shmem, dctx->blob_size);
 
    dctx->shmem = NULL;
    dctx->rsp_mem = NULL;
    dctx->rsp_mem_sz = 0;
+   dctx->blob_size = 0;
+}
+
+static bool
+drm_check_shm_bounds(struct drm_context *dctx, const struct vdrm_ccmd_req *hdr,
+                     size_t len)
+{
+   size_t rsp_mem_sz = dctx->rsp_mem_sz;
+   size_t off = hdr->rsp_off;
+
+   if ((off > rsp_mem_sz) || (len > rsp_mem_sz - off)) {
+      drm_err("invalid shm offset: off=%zu, len=%zu (shmem_size=%zu)",
+              off, len, rsp_mem_sz);
+      return false;
+   }
+
+   return true;
 }
 
 static int
@@ -108,24 +123,36 @@ drm_context_submit_cmd_dispatch(struct drm_context *dctx, const struct vdrm_ccmd
 
    if (ret) {
       drm_err("%s: dispatch failed: %d (%s)", ccmd->name, ret, strerror(errno));
-      return ret;
+      goto free_response_buffer;
    }
 
    /* Commands with no response, like SET_DEBUGINFO, could be sent before
     * the shmem buffer is allocated.
     */
    if (!dctx->shmem)
-      return 0;
+      goto free_response_buffer;
 
-   /* If the response length from the guest is smaller than the
-    * expected size, ie. newer host and older guest, then a shadow
-    * copy is used, and we need to copy back to the actual rsp
-    * buffer.
-    */
-   struct vdrm_ccmd_rsp *rsp = (struct vdrm_ccmd_rsp *)&dctx->rsp_mem[hdr->rsp_off];
    if (dctx->current_rsp) {
-      uint32_t len = *(volatile uint32_t *)&rsp->len;
-      len = MIN2(len, dctx->current_rsp->len);
+      uint32_t len = dctx->current_rsp->len;
+
+     /* To prevent TOCTOU attacks, a shadow buffer is always used.
+      * We need to copy back to the actual rsp buffer. Add a bounds
+      * check for defense in depth.
+      */
+      if (!drm_check_shm_bounds(dctx, hdr, len)) {
+         assert(!"Failed bounds check when copying to response buffer");
+         ret = -EFAULT;
+         goto free_response_buffer;
+      }
+
+      struct vdrm_ccmd_rsp *rsp = (struct vdrm_ccmd_rsp *)&dctx->rsp_mem[hdr->rsp_off];
+      uint32_t untrusted_len = *(volatile uint32_t *)&rsp->len;
+
+      /* WARNING: MIN2() evaluates its arguments more than once!
+       * DO NOT inline the above volatile load into it! That would
+       * introduce a double fetch vulnerability.
+       */
+      len = MIN2(len, untrusted_len);
       memcpy(rsp, dctx->current_rsp, len);
       rsp->len = len;
       free(dctx->current_rsp);
@@ -135,6 +162,16 @@ drm_context_submit_cmd_dispatch(struct drm_context *dctx, const struct vdrm_ccmd
    p_atomic_xchg(&dctx->shmem->seqno, hdr->seqno);
 
    return 0;
+
+free_response_buffer:
+   /* Free the response buffer. This both prevents leaks
+    * and (more importantly) ensures that if a response
+    * is about to be copied to shared memory, its offset
+    * was validated by the *current* command's handler.
+    */
+   free(dctx->current_rsp);
+   dctx->current_rsp = NULL;
+   return ret;
 }
 
 static int
@@ -314,14 +351,8 @@ void *
 drm_context_rsp(struct drm_context *dctx, const struct vdrm_ccmd_req *hdr,
                 size_t len)
 {
-   size_t rsp_mem_sz = dctx->rsp_mem_sz;
-   size_t off = hdr->rsp_off;
-
-   if ((off > rsp_mem_sz) || (len > rsp_mem_sz - off)) {
-      drm_err("invalid shm offset: off=%zu, len=%zu (shmem_size=%zu)",
-              off, len, rsp_mem_sz);
+   if (!drm_check_shm_bounds(dctx, hdr, len))
       return NULL;
-   }
 
    /* The shared buffer might be writable by the guest.  To avoid TOCTOU,
     * data races, and other security problems, always allocate a shadow buffer.
@@ -357,12 +388,12 @@ drm_context_get_shmem_blob(struct drm_context *dctx,
       return -EINVAL;
    }
 
-   if (dctx->shmem) {
+   if (dctx->shmem || dctx->blob_size) {
       drm_err("there can be only one!");
       return -EINVAL;
    }
 
-   if ((blob_size < sizeof(*dctx->shmem)) || (blob_size > UINT32_MAX)) {
+   if ((blob_size < shmem_size) || (blob_size > UINT32_MAX)) {
       drm_err("invalid blob size 0x%" PRIx64, blob_size);
       return -EINVAL;
    }
@@ -393,8 +424,9 @@ drm_context_get_shmem_blob(struct drm_context *dctx,
    dctx->shmem->rsp_mem_offset = shmem_size;
 
    uint8_t *ptr = (uint8_t *)dctx->shmem;
-   dctx->rsp_mem = &ptr[dctx->shmem->rsp_mem_offset];
-   dctx->rsp_mem_sz = blob_size - dctx->shmem->rsp_mem_offset;
+   dctx->rsp_mem = ptr + shmem_size;
+   dctx->rsp_mem_sz = blob_size - shmem_size;
+   dctx->blob_size = blob_size;
 
    blob->u.fd = fd;
    blob->type = VIRGL_RESOURCE_FD_SHM;

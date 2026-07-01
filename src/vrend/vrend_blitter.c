@@ -477,7 +477,7 @@ static void vrend_renderer_init_blit_ctx(struct vrend_blitter_ctx *blit_ctx)
    }
 
    if (!blit_ctx->gl_context) {
-      virgl_error("virglrenderer: Unable to create blit context");
+      virgl_error("virglrenderer: Unable to create blit context\n");
       abort();
    }
 

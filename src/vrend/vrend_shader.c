@@ -3716,7 +3716,7 @@ static bool is_integer_memory(const struct dump_ctx *ctx, enum tgsi_file_type fi
    case TGSI_FILE_MEMORY:
       return ctx->integer_memory;
    default:
-      virgl_error("Invalid file type");
+      virgl_error("Invalid file type: %d\n", file_type);
    }
 
    return false;
@@ -4098,7 +4098,7 @@ static const char *get_atomic_opname(int tgsi_opcode, bool *is_cas)
       opname = "Max";
       break;
    default:
-      virgl_error("Illegal atomic opcode");
+      virgl_error("Illegal atomic opcode: %d\n", tgsi_opcode);
       return NULL;
    }
    return opname;

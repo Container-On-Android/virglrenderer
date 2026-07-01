@@ -43,6 +43,7 @@ struct drm_context {
    struct vdrm_shmem *shmem;
    uint8_t *rsp_mem;
    uint32_t rsp_mem_sz;
+   uint32_t blob_size;
 
    struct vdrm_ccmd_rsp *current_rsp;
 

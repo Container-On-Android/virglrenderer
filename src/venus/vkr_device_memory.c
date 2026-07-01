@@ -297,34 +297,10 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
    uint32_t valid_fd_types = 0;
    int udmabuf_fd = -1;
    void *gbm_bo = NULL;
-   VkExportMemoryAllocateInfo local_export_info;
-
-   /* macOS: use shared memory + Metal buffer for HOST_VISIBLE cross-process sharing. */
    struct vkr_mtl_shm *mtl_shm = NULL;
-#ifdef __APPLE__
-   VkImportMemoryMetalHandleInfoEXT local_metal_import = {
-      .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT,
-   };
+   VkExportMemoryAllocateInfo local_export_info;
+   VkImportMemoryMetalHandleInfoEXT local_metal_import;
 
-   if ((property_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) &&
-       physical_dev->EXT_external_memory_metal && !res_info) {
-      assert(!res_info);
-      mtl_shm = vkr_mtl_shm_alloc(dev->mtl_device, alloc_info->allocationSize);
-      if (!mtl_shm) {
-         args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
-         return;
-      }
-
-      /* Chain Metal import into alloc_info */
-      local_metal_import.pNext = alloc_info->pNext;
-      local_metal_import.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT;
-      local_metal_import.handle = mtl_shm->mtl_buffer;
-      alloc_info->pNext = &local_metal_import;
-      alloc_info->allocationSize = mtl_shm->shm_size;
-
-      valid_fd_types = 1 << VIRGL_RESOURCE_FD_SHM;
-   } else
-#endif /* __APPLE__ */
    if ((property_flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) && !res_info) {
       /* An implementation can support dma_buf import along with opaque fd export/import.
        * If the client driver is using external memory and requesting dma_buf, without
@@ -373,6 +349,23 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
                   align(alloc_info->allocationSize, getpagesize());
             }
          }
+      } else if (physical_dev->EXT_external_memory_metal) {
+         /* Allocate shm and wrap as a MTLBuffer for import. */
+         mtl_shm = vkr_mtl_shm_alloc(dev->mtl_device, alloc_info->allocationSize);
+         if (!mtl_shm) {
+            args->ret = VK_ERROR_OUT_OF_HOST_MEMORY;
+            return;
+         }
+
+         local_metal_import = (VkImportMemoryMetalHandleInfoEXT){
+            .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT,
+            .pNext = alloc_info->pNext,
+            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT,
+            .handle = mtl_shm->mtl_buffer,
+         };
+         alloc_info->pNext = &local_metal_import;
+         alloc_info->allocationSize = mtl_shm->shm_size;
+         valid_fd_types = 1 << VIRGL_RESOURCE_FD_SHM;
       } else if (physical_dev->EXT_external_memory_dma_buf) {
          /* Allocate dma_buf externally and force to import. */
          if (export_info) {

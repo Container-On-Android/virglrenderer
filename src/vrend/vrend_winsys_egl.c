@@ -431,7 +431,7 @@ struct virgl_egl *virgl_egl_init(EGLNativeDisplayType display_id, bool surfacele
       egl->signaled_fence = eglCreateSyncKHR(egl->egl_display,
                                              EGL_SYNC_NATIVE_FENCE_ANDROID, NULL);
       if (!egl->signaled_fence) {
-         virgl_error("Failed to create signaled fence");
+         virgl_error("Failed to create signaled fence\n");
          goto fail;
       }
 
