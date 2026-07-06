@@ -34,28 +34,28 @@ option(
 option(
   'minigbm_allocation',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'DEPRECATED: enable support for minigbm_allocations'
 )
 
 option(
   'venus',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable support for venus'
 )
 
 option(
   'vulkan-dload',
   type : 'boolean',
-  value : 'true',
+  value : true,
   description : 'enable loading libvulkan dynamically at runtime instead of linking to it at build-time'
 )
 
 option(
   'vulkan-preload',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'Enable Vulkan ICD preload inside the render server process. ' +
                 'This allows sharing of e.g. anon pages allocated within ICD ' +
                 'loading for free among all render worker processes forked. ' +
@@ -67,7 +67,7 @@ option(
 option(
   'check-gl-errors',
   type : 'boolean',
-  value : 'true',
+  value : true,
   description : 'treat host-side gl errors as fatal'
 )
 
@@ -104,28 +104,28 @@ option(
 option(
   'video',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable support for hardware video acceleration'
 )
 
 option(
   'tests',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable unit tests'
 )
 
 option(
   'fuzzer',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable unit tests'
 )
 
 option(
   'valgrind',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable running unit tests with valgrind'
 )
 
@@ -140,6 +140,6 @@ option(
 option(
   'unstable-apis',
   type : 'boolean',
-  value : 'false',
+  value : false,
   description : 'enable unstable apis'
 )
