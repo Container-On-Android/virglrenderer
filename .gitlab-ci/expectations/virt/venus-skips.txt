@@ -33,3 +33,10 @@ dEQP-VK.ray_tracing_pipeline.build.gpu.level_instances.aabbs_65536_1_1
 dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.a1r5g5b5_unorm_pack16
 dEQP-VK.pipeline.pipeline_library.blend.dual_source.multi_attachments.a2b10g10r10_unorm_pack32
 
+# Skip broken tests:
+# https://gerrit.khronos.org/c/vk-gl-cts/+/15969
+# https://gerrit.khronos.org/c/vk-gl-cts/+/19422
+# https://gerrit.khronos.org/c/vk-gl-cts/+/19625
+dEQP-VK.image.swapchain_mutable.direct_drm.*
+dEQP-VK.wsi.acquire_drm_display.*
+dEQP-VK.wsi.direct_drm.*
