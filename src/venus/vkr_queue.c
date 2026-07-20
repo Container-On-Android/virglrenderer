@@ -177,6 +177,7 @@ vkr_queue_thread(void *arg)
       if (sync->device_lost) {
          result = VK_ERROR_DEVICE_LOST;
       } else {
+         TRACE_SCOPE("vk->WaitForFences");
          result = vk->WaitForFences(dev->base.handle.device, 1, &sync->fence, true,
                                     ns_per_sec * 3);
       }
@@ -440,6 +441,7 @@ static void
 vkr_dispatch_vkResetFences(UNUSED struct vn_dispatch_context *dispatch,
                            struct vn_command_vkResetFences *args)
 {
+   TRACE_FUNC();
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
@@ -462,6 +464,7 @@ static void
 vkr_dispatch_vkWaitForFences(UNUSED struct vn_dispatch_context *dispatch,
                              struct vn_command_vkWaitForFences *args)
 {
+   TRACE_FUNC();
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
@@ -474,6 +477,7 @@ static void
 vkr_dispatch_vkResetFenceResourceMESA(struct vn_dispatch_context *dispatch,
                                       struct vn_command_vkResetFenceResourceMESA *args)
 {
+   TRACE_FUNC();
    struct vkr_context *ctx = dispatch->data;
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
@@ -525,6 +529,7 @@ static void
 vkr_dispatch_vkWaitSemaphores(UNUSED struct vn_dispatch_context *dispatch,
                               struct vn_command_vkWaitSemaphores *args)
 {
+   TRACE_FUNC();
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
@@ -536,6 +541,7 @@ static void
 vkr_dispatch_vkSignalSemaphore(UNUSED struct vn_dispatch_context *dispatch,
                                struct vn_command_vkSignalSemaphore *args)
 {
+   TRACE_FUNC();
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
 
@@ -548,6 +554,7 @@ vkr_dispatch_vkWaitSemaphoreResourceMESA(
    struct vn_dispatch_context *dispatch,
    struct vn_command_vkWaitSemaphoreResourceMESA *args)
 {
+   TRACE_FUNC();
    struct vkr_context *ctx = dispatch->data;
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
@@ -575,6 +582,7 @@ vkr_dispatch_vkImportSemaphoreResourceMESA(
    struct vn_dispatch_context *dispatch,
    struct vn_command_vkImportSemaphoreResourceMESA *args)
 {
+   TRACE_FUNC();
    struct vkr_context *ctx = dispatch->data;
    struct vkr_device *dev = vkr_device_from_handle(args->device);
    struct vn_device_proc_table *vk = &dev->proc_table;
