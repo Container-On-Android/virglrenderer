@@ -13,6 +13,12 @@ dEQP-VK.binding_model.mutable_descriptor.multiple_arrays_mixed.unbounded.noalias
 dEQP-VK.pipeline.monolithic.timestamp.calibrated.calibration_test
 
 # uprev Mesa in Virglrenderer
+dEQP-VK.api.copy_and_blit.core.use_after_copy.a1r5g5b5_unorm_pack16.transfer_dst_optimal.1024x1024x2_tq_color_att_flag_img2img_msaa
+dEQP-VK.api.copy_and_blit.core.use_after_copy.a8b8g8r8_srgb_pack32.transfer_dst_optimal.1024x1024x2_regions_color_att_flag_img2img_msaa
+dEQP-VK.api.copy_and_blit.core.use_after_copy.r5g6b5_unorm_pack16.transfer_dst_optimal.1024x1024x2_tq_color_att_flag_img2img_msaa
+dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.color.2d.bc1_rgb_srgb_block.r8_srgb.general_general_linear
+dEQP-VK.api.copy_and_blit.dedicated_allocation.blit_image.all_formats.color.2d.r16g16_sfloat.r4g4_unorm_pack8.optimal_general_cubic
+dEQP-VK.api.copy_and_blit.dedicated_allocation.image_to_image.all_formats.color.2d_to_2d.bc2_unorm_block.r32g32b32a32_uint.optimal_optimal
 dEQP-VK.api.info.image_format_properties2.2d.linear.g16b16g16r16_422_unorm
 dEQP-VK.binding_model.mutable_descriptor.multiple_arrays.constant_size.aliasing.update_write.no_source.no_source.pool_no_types.pre_update.index_push_constant.comp
 dEQP-VK.compute.shader_object_binary.workgroup_memory_explicit_layout.zero.uvec4_array_to_vec4_dvec4_array_3

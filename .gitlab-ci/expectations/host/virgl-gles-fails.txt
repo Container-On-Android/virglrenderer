@@ -3148,6 +3148,7 @@ spec@arb_texture_rectangle@copyteximage rect samples=2,Fail
 spec@arb_texture_rectangle@copyteximage rect samples=4,Fail
 spec@arb_texture_rectangle@copyteximage rect samples=6,Fail
 spec@arb_texture_rectangle@copyteximage rect samples=8,Fail
+spec@arb_texture_view@tex-view,Fail
 spec@ext_framebuffer_multisample@alpha-to-one-dual-src-blend 6,Fail
 spec@ext_framebuffer_multisample@alpha-to-one-dual-src-blend 8,Fail
 spec@ext_framebuffer_multisample@draw-buffers-alpha-to-one 6,Fail
@@ -3192,7 +3193,7 @@ spec@ext_texture_array@copyteximage 2d_array samples=2,Fail
 spec@ext_texture_array@copyteximage 2d_array samples=4,Fail
 spec@ext_texture_array@copyteximage 2d_array samples=6,Fail
 spec@ext_texture_array@copyteximage 2d_array samples=8,Fail
-spec@glsl-1.30@execution@glsl-packed-back-color,Fail
+spec@ext_transform_feedback2@draw-auto offset,Fail
 spec@glsl-1.50@execution@variable-indexing@vs-output-array-vec3-index-wr-before-gs,Crash
 spec@glsl-1.50@execution@variable-indexing@vs-output-array-vec4-index-wr-before-gs,Crash
 spec@nv_copy_image@nv_copy_image-formats --samples=2,Fail

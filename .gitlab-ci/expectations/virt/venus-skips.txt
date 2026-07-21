@@ -25,9 +25,11 @@ dEQP-VK.texture.explicit_lod.2d.sizes.128x128_nearest_linear_mipmap_linear_repea
 dEQP-VK.binding_model.mutable_descriptor.multiple_arrays_mixed.*
 
 # uprev Mesa in Virglrenderer, Timeout
+dEQP-VK.pipeline.fast_linked_library.blend.dual_source.multi_attachments.b4g4r4a4_unorm_pack16
 dEQP-VK.texture.explicit_lod.2d.sizes.128x128_nearest_linear_mipmap_linear_clamp
 dEQP-VK.ray_tracing_pipeline.acceleration_structures.dynamic_indexing.dynamic_indexing
 dEQP-VK.ray_tracing_pipeline.build.gpu.level_instances.aabbs_65536_1_1
+dEQP-VK.synchronization.internally_synchronized_objects.pipeline_cache_compute
 
 # uprev Mesa in Virglrenderer
 dEQP-VK.pipeline.monolithic.blend.dual_source.multi_attachments.a1r5g5b5_unorm_pack16
