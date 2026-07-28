@@ -194,6 +194,8 @@ static enum pipe_format pipe_format_from_va_fourcc(unsigned format)
       return PIPE_FORMAT_P010;
    case VA_FOURCC('P','0','1','6'):
       return PIPE_FORMAT_P016;
+   case VA_FOURCC('P','2','1','0'):
+      return PIPE_FORMAT_P210;
    case VA_FOURCC('I','4','2','0'):
       return PIPE_FORMAT_IYUV;
    case VA_FOURCC('Y','V','1','2'):
@@ -295,6 +297,9 @@ static uint32_t va_format_from_pipe(uint32_t format)
     switch(format) {
     case PIPE_FORMAT_P010:
         va_format = VA_RT_FORMAT_YUV420_10;
+        break;
+    case PIPE_FORMAT_P210:
+        va_format = VA_RT_FORMAT_YUV422_10;
         break;
     default:
         va_format = VA_RT_FORMAT_YUV420;
