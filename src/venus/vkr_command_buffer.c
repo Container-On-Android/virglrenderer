@@ -1267,6 +1267,13 @@ vkr_dispatch_vkCmdPushDataEXT(UNUSED struct vn_dispatch_context *dispatch,
    VKR_CMD_CALL(CmdPushDataEXT, args, args->pPushDataInfo);
 }
 
+static void
+vkr_dispatch_vkCmdEndRendering2KHR(UNUSED struct vn_dispatch_context *ctx,
+                                   struct vn_command_vkCmdEndRendering2KHR *args)
+{
+   VKR_CMD_CALL(CmdEndRendering2KHR, args, args->pRenderingEndInfo);
+}
+
 void
 vkr_context_init_command_pool_dispatch(struct vkr_context *ctx)
 {
@@ -1527,4 +1534,7 @@ vkr_context_init_command_buffer_dispatch(struct vkr_context *ctx)
    dispatch->dispatch_vkCmdBindSamplerHeapEXT = vkr_dispatch_vkCmdBindSamplerHeapEXT;
    dispatch->dispatch_vkCmdBindResourceHeapEXT = vkr_dispatch_vkCmdBindResourceHeapEXT;
    dispatch->dispatch_vkCmdPushDataEXT = vkr_dispatch_vkCmdPushDataEXT;
+
+   /* VK_KHR_maintenance10 */
+   dispatch->dispatch_vkCmdEndRendering2KHR = vkr_dispatch_vkCmdEndRendering2KHR;
 }
