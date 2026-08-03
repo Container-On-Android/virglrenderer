@@ -1,0 +1,8 @@
+[wrap-git]
+directory = venus-protocol-1.0
+url = https://gitlab.freedesktop.org/virgl/venus-protocol.git
+revision = 027b9aca5c480d02bea6ef1b15406f5fd15cd7d7
+depth = 1
+
+[provide]
+dependency_names = dep_vn_protocol_renderer

@@ -3,6 +3,18 @@
 set -e
 set -o xtrace
 
+comma_separated() {
+  local IFS=,
+  echo "$*"
+}
+
+no_werror() {
+  # shellcheck disable=SC2048
+  for i in $*; do
+    echo "-D${i}:werror=false "
+  done
+}
+
 CROSS_FILE=/cross_file-"$CROSS".txt
 
 # We need to control the version of llvm-config we're using, so we'll
@@ -60,8 +72,20 @@ RET=0
 RESULTS_DIR=$(pwd)/results/${TEST_SUITE:-build}
 rm -rf _build
 
+# these are built as Meson subprojects; we want to use Meson's
+# --force-fallback-for to ensure that we build the subprojects from their wrap
+# files, and we also want to disable Werror on those, since we do not control
+# these projects and making them warning-free is not our goal.
+# shellcheck disable=2206
+meson_subprojects=(
+    venus-protocol
+    ${FORCE_FALLBACK_FOR:-}
+)
+
 meson setup _build --native-file=native.file \
     --wrap-mode=${WRAP_DEBUG:-nofallback} \
+    --force-fallback-for "$(comma_separated "${meson_subprojects[@]}")" \
+    $(no_werror "${meson_subprojects[@]}") \
     ${CROSS+--cross "$CROSS_FILE"} \
     -D prefix=$(pwd)/install \
     -D libdir=lib \
