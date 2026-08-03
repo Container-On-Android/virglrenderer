@@ -31,8 +31,8 @@
 
 #include "util/list.h"
 #include "util/macros.h"
-#include "venus-protocol/vulkan.h"
 #include "virgl_resource.h"
+#include "vulkan/vulkan.h"
 
 #include "vkr_library.h"
 

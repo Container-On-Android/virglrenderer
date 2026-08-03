@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 
-#include "venus-protocol/vulkan.h"
+#include "vulkan/vulkan.h"
 
 struct vulkan_library {
    void *handle;

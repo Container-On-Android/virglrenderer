@@ -453,7 +453,7 @@ if with_venus and with_host_darwin
    add_project_arguments('-DHAVE_CONFIG_H=1', language : 'objc')
 endif
 
-inc_configuration = include_directories(['.', 'src'])
+inc_configuration = include_directories(['.', 'include', 'src'])
 
 with_fuzzer = get_option('fuzzer')
 with_valgrind = get_option('valgrind')

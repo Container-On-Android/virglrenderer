@@ -13,7 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "vulkan.h"
+#include "vulkan/vulkan.h"
 
 #include "vn_protocol_renderer_cs.h"
 
