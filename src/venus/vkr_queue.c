@@ -5,7 +5,7 @@
 
 #include "vkr_queue.h"
 
-#include "venus-protocol/vn_protocol_renderer_queue.h"
+#include "vn_protocol_renderer_queue.h"
 
 #include "vkr_context.h"
 #include "vkr_physical_device.h"

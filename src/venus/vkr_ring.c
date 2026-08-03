@@ -9,7 +9,7 @@
 #include <sys/resource.h>
 #include <time.h>
 
-#include "venus-protocol/vn_protocol_renderer_dispatches.h"
+#include "vn_protocol_renderer_dispatches.h"
 
 #include "vkr_context.h"
 

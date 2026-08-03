@@ -8,7 +8,7 @@
 
 #include "vkr_common.h"
 
-#include "venus-protocol/vn_protocol_renderer_defines.h"
+#include "vn_protocol_renderer_defines.h"
 
 /* We read from the ring buffer to a temporary buffer for
  * vkr_context_submit_cmd.  Until that is changed, we want to put a limit

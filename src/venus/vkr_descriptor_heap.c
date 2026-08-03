@@ -5,7 +5,7 @@
 
 #include "vkr_descriptor_heap.h"
 
-#include "venus-protocol/vn_protocol_renderer_descriptor_heap.h"
+#include "vn_protocol_renderer_descriptor_heap.h"
 
 #include "vkr_context.h"
 #include "vkr_device.h"

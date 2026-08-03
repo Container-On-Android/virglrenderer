@@ -5,7 +5,7 @@
 
 #include "vkr_common.h"
 
-#include "venus-protocol/vn_protocol_renderer_info.h"
+#include "vn_protocol_renderer_info.h"
 #include "virtgpu_drm.h"
 #include "venus_hw.h"
 

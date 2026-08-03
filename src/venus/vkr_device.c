@@ -5,7 +5,7 @@
 
 #include "vkr_device.h"
 
-#include "venus-protocol/vn_protocol_renderer_device.h"
+#include "vn_protocol_renderer_device.h"
 
 #include "vkr_command_buffer.h"
 #include "vkr_context.h"

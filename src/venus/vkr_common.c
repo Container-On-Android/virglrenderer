@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 #include "util/u_debug.h"
-#include "venus-protocol/vn_protocol_renderer_info.h"
+#include "vn_protocol_renderer_info.h"
 
 #include "vkr_context.h"
 #include "vkr_cs.h"

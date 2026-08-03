@@ -5,7 +5,7 @@
 
 #include "vkr_acceleration_structure.h"
 
-#include "venus-protocol/vn_protocol_renderer_acceleration_structure.h"
+#include "vn_protocol_renderer_acceleration_structure.h"
 
 #include "vkr_acceleration_structure_gen.h"
 #include "vkr_context.h"

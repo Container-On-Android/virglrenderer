@@ -7,7 +7,7 @@
 
 #include <math.h>
 
-#include "venus-protocol/vn_protocol_renderer_transport.h"
+#include "vn_protocol_renderer_transport.h"
 
 #include "vkr_device_memory_gen.h"
 #include "vkr_metal_helpers.h"

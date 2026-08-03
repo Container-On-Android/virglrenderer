@@ -8,7 +8,7 @@
 
 #include "vkr_common.h"
 
-#include "venus-protocol/vn_protocol_renderer_util.h"
+#include "vn_protocol_renderer_util.h"
 
 struct vkr_physical_device {
    struct vkr_object base;

@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include "util/anon_file.h"
-#include "venus-protocol/vn_protocol_renderer_dispatches.h"
+#include "vn_protocol_renderer_dispatches.h"
 
 #define XXH_INLINE_ALL
 #include "util/xxhash.h"

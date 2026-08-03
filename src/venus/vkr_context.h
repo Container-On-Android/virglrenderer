@@ -9,8 +9,8 @@
 #include "vkr_common.h"
 #include "vkr_library.h"
 
-#include "venus-protocol/vn_protocol_renderer_defines.h"
-#include "venus-protocol/vn_protocol_renderer_util.h"
+#include "vn_protocol_renderer_defines.h"
+#include "vn_protocol_renderer_util.h"
 #include "virgl_resource.h"
 
 #include "vkr_cs.h"

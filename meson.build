@@ -363,7 +363,13 @@ if with_venus and with_host_darwin
 endif
 
 if with_venus
-   venus_dep = []
+   dep_venus_protocol = dependency('venus-protocol',
+     version : '== 1.0',
+     fallback : ['venus-protocol', 'dep_vn_protocol_renderer'],
+     required : true
+   )
+
+   venus_dep = [dep_venus_protocol]
    if get_option('vulkan-dload')
       conf_data.set('ENABLE_VULKAN_DLOAD', 1)
    else

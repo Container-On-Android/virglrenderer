@@ -5,7 +5,7 @@
 
 #include "vkr_host_copy.h"
 
-#include "venus-protocol/vn_protocol_renderer_host_copy.h"
+#include "vn_protocol_renderer_host_copy.h"
 
 #include "vkr_context.h"
 #include "vkr_device.h"

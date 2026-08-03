@@ -5,8 +5,8 @@
 
 #include "vkr_transport.h"
 
-#include "venus-protocol/vn_protocol_renderer_dispatches.h"
-#include "venus-protocol/vn_protocol_renderer_transport.h"
+#include "vn_protocol_renderer_dispatches.h"
+#include "vn_protocol_renderer_transport.h"
 
 #include "vkr_context.h"
 #include "vkr_ring.h"
