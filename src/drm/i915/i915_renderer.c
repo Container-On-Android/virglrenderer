@@ -30,7 +30,7 @@ i915_renderer_probe(int fd, struct virgl_renderer_capset_drm *capset)
    capset->u.intel.pci_device_id = drmdev->deviceinfo.pci->device_id;
    capset->u.intel.pci_revision_id = drmdev->deviceinfo.pci->revision_id;
 
-   capset->wire_format_version = 1;
+   capset->wire_format_version = 2;
 
    drm_dbg("wire_format_version: %u", capset->wire_format_version);
    drm_dbg("version_major:       %u", capset->version_major);

@@ -511,12 +511,6 @@ i915_ccmd_gem_execbuffer2(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
 
    struct drm_i915_gem_execbuffer2 exec = {0};
 
-   /*
-    * Assume there is one actively used context at a time.
-    *
-    * If this ever changes, guest kernel VirtIO-GPU UAPI will need to be extended
-    * to support logical sub-contexts. VirtIO-GPU supports one context per DRM FD.
-    */
    exec.rsvd1 = req->context_id;
    exec.buffers_ptr = (uintptr_t)buffers;
    exec.buffer_count = req->buffer_count;
@@ -524,7 +518,24 @@ i915_ccmd_gem_execbuffer2(struct drm_context *dctx, struct vdrm_ccmd_req *hdr)
    exec.batch_len = req->batch_len;
    exec.flags = req->flags;
 
+   if (!req->context_id || req->context_id > 8) {
+      drm_err("invalid context_id");
+      free(payload);
+      return -EINVAL;
+   }
+
    int ring_idx = 1 + (exec.flags & I915_EXEC_RING_MASK);
+
+   /*
+    * Android build of ANV driver uses 2 sub-contexts on same render ring
+    * for graphics and compute queues. In all other cases i915 driver has one
+    * sub-context per DRM context. First protocol version reserved 64 rings
+    * (fence contexts) per DRM context, i915 driver doesn't need that many rings.
+    * Split reserved 64 rings by 8 HW engines per sub-context, this makes each
+    * sub-context have own fence contexts needed for correct multi-queue syncing.
+    */
+   if (hdr->cmd == I915_CCMD_GEM_EXECBUFFER2_V2)
+      ring_idx += (req->context_id - 1) * 8;
 
    if (ring_idx >= (int)ARRAY_SIZE(ictx->timelines)) {
       free(payload);
@@ -667,6 +678,7 @@ const struct drm_ccmd i915_ccmd_dispatch[] = {
    HANDLER(GEM_EXECBUFFER2, gem_execbuffer2),
    HANDLER(GEM_SET_MMAP_MODE, gem_set_mmap_mode),
    HANDLER(GEM_BUSY, gem_busy),
+   HANDLER(GEM_EXECBUFFER2_V2, gem_execbuffer2),
 };
 
 const unsigned int i915_ccmd_dispatch_size = ARRAY_SIZE(i915_ccmd_dispatch);
