@@ -45,6 +45,7 @@ struct panfrost_ccmd_wait_bo_req {
    struct vdrm_ccmd_req hdr;
 
    uint32_t res_id;
+   uint32_t pad;
    int64_t timeout_ns;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_wait_bo_req)
@@ -53,7 +54,7 @@ DEFINE_CAST(vdrm_ccmd_req, panfrost_ccmd_wait_bo_req)
 struct panfrost_ccmd_wait_bo_rsp {
    struct vdrm_ccmd_rsp hdr;
 
-   int ret;
+   int32_t ret;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_wait_bo_rsp)
 
@@ -86,7 +87,7 @@ DEFINE_CAST(vdrm_ccmd_req, panfrost_ccmd_mmap_bo_req)
 struct panfrost_ccmd_mmap_bo_rsp {
    struct vdrm_ccmd_rsp hdr;
 
-   int ret;
+   int32_t ret;
    uint64_t offset;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_mmap_bo_rsp)
@@ -106,7 +107,7 @@ DEFINE_CAST(vdrm_ccmd_req, panfrost_ccmd_get_param_req)
 struct panfrost_ccmd_get_param_rsp {
    struct vdrm_ccmd_rsp hdr;
 
-   int ret;
+   int32_t ret;
    uint64_t value;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_get_param_rsp)
@@ -126,7 +127,7 @@ DEFINE_CAST(vdrm_ccmd_req, panfrost_ccmd_get_bo_offset_req)
 struct panfrost_ccmd_get_bo_offset_rsp {
    struct vdrm_ccmd_rsp hdr;
 
-   int ret;
+   int32_t ret;
    uint64_t offset;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_get_bo_offset_rsp)
@@ -147,7 +148,7 @@ struct panfrost_ccmd_madvise_rsp {
    struct vdrm_ccmd_rsp hdr;
 
    uint32_t pad;
-   int ret;
+   int32_t ret;
    uint32_t retained;
 };
 PANFROST_STATIC_ASSERT_SIZE(panfrost_ccmd_madvise_rsp)
