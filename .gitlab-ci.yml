@@ -653,6 +653,7 @@ virgl-traces:
 venus-lavapipe:
   extends:
     - .venus-lavapipe-test
+  parallel: 3
   variables:
     DEQP_FRACTION: 35
     DEQP_SUITE: venus
