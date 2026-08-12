@@ -640,7 +640,6 @@ virgl-traces:
     PIGLIT_TRACES_FILE: "traces-virgl.yml"
     PIGLIT_REPLAY_DEVICE_NAME: "gl-virgl"
     PIGLIT_RESULTS: "virgl-replay"
-    KERNEL_TAG: "v6.16-mesa-9d85"
 
 .venus-lavapipe-test:
   extends:
@@ -650,9 +649,6 @@ virgl-traces:
     CROSVM_GALLIUM_DRIVER: "llvmpipe"
     CROSVM_VK_DRIVER: "lvp"
     RUNNER_WRAPPER: "install/crosvm-runner.sh"
-    # INFO: Keep Linux version at 6.14 as 6.16 seems to have regressed
-    # in virtio gfx device initializaiton
-    KERNEL_TAG: "v6.14-mesa-4277"
 
 venus-lavapipe:
   extends:
