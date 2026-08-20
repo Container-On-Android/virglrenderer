@@ -80,6 +80,7 @@ panfrost_renderer_create(int fd, UNUSED size_t debug_len, UNUSED const char *deb
    pan_ctx->base.base.destroy = panfrost_renderer_destroy;
    pan_ctx->base.base.attach_resource = panfrost_renderer_attach_resource;
    pan_ctx->base.base.export_opaque_handle = panfrost_renderer_export_opaque_handle;
+   pan_ctx->base.base.resource_map = panfrost_renderer_resource_map;
    pan_ctx->base.base.get_blob = panfrost_renderer_get_blob;
    pan_ctx->base.base.submit_fence = panfrost_renderer_submit_fence;
    pan_ctx->base.base.supports_fence_sharing = true;

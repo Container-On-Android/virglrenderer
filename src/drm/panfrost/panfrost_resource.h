@@ -11,6 +11,11 @@
 bool
 panfrost_res_id_unused(struct panfrost_context *pan_ctx, uint32_t res_id);
 
+void *
+panfrost_renderer_resource_map(struct virgl_context *vctx,
+                               struct virgl_resource *res, void *addr,
+                               int32_t prot, int32_t flags);
+
 void
 panfrost_renderer_attach_resource(struct virgl_context *vctx, struct virgl_resource *res);
 

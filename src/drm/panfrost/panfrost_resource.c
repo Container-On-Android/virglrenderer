@@ -3,17 +3,46 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <sys/mman.h>
 #include <xf86drm.h>
+#include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 
 #include "util/anon_file.h"
 
-#include "panfrost_ccmd.h"
 #include "panfrost_object.h"
 #include "panfrost_resource.h"
+
+#include "panfrost_drm.h"
+
 #include "drm_util.h"
 
+void *
+panfrost_renderer_resource_map(struct virgl_context *vctx,
+                               struct virgl_resource *res, void *addr,
+                               int32_t prot, int32_t flags)
+{
+   struct drm_context *dctx = to_drm_context(vctx);
+   struct panfrost_context *ctx = to_panfrost_context(dctx);
+   struct panfrost_object *obj = panfrost_get_object_from_res_id(ctx, res->res_id);
+
+   drm_dbg("obj=%p, res_id=%u", (void *)obj, res->res_id);
+
+   if (!obj) {
+      drm_err("invalid res_id %u", res->res_id);
+      return NULL;
+   }
+   struct drm_panfrost_mmap_bo mmap_info = { .handle = obj->base.handle };
+   int ret = drmIoctl(dctx->fd, DRM_IOCTL_PANFROST_MMAP_BO, &mmap_info);
+   if (ret) {
+      drm_err("DRM_IOCTL_PANFROST_MMAP_BO failed: %d %s", errno, strerror(errno));
+      return NULL;
+   }
+
+   return mmap(addr, obj->base.size, prot, flags, dctx->fd, mmap_info.offset);
+}
 
 void
 panfrost_renderer_attach_resource(struct virgl_context *vctx, struct virgl_resource *res)
