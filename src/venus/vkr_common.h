@@ -230,6 +230,12 @@ vkr_pnext_get_next(const void *s)
    return next;
 }
 
+static inline void
+vkr_pnext_set_next(void *s, const void *next)
+{
+   memcpy((char *)s + offsetof(VkBaseInStructure, pNext), &next, sizeof(next));
+}
+
 static inline void *
 vkr_find_struct(const void *s, VkStructureType type)
 {

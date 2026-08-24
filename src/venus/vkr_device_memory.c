@@ -263,16 +263,16 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
    /* translate VkImportMemoryResourceInfoMESA into VkImportMemoryFdInfoKHR in place */
    VkImportMemoryFdInfoKHR local_import_info = { .fd = -1 };
    VkImportMemoryResourceInfoMESA *res_info = NULL;
-   VkBaseInStructure *prev_of_res_info = vkr_find_prev_struct(
+   void *prev_of_res_info = vkr_find_prev_struct(
       alloc_info, VK_STRUCTURE_TYPE_IMPORT_MEMORY_RESOURCE_INFO_MESA);
    if (prev_of_res_info) {
-      res_info = (VkImportMemoryResourceInfoMESA *)prev_of_res_info->pNext;
+      res_info = (VkImportMemoryResourceInfoMESA *)vkr_pnext_get_next(prev_of_res_info);
       if (!vkr_get_fd_info_from_resource_info(ctx, res_info, &local_import_info)) {
          args->ret = VK_ERROR_INVALID_EXTERNAL_HANDLE;
          return;
       }
 
-      prev_of_res_info->pNext = (const struct VkBaseInStructure *)&local_import_info;
+      vkr_pnext_set_next(prev_of_res_info, &local_import_info);
    }
 
    VkExportMemoryAllocateInfo *export_info =
@@ -370,10 +370,10 @@ vkr_dispatch_vkAllocateMemory(struct vn_dispatch_context *dispatch,
          /* Allocate dma_buf externally and force to import. */
          if (export_info) {
             /* Strip export info since valid_fd_types can only be dma_buf here. */
-            VkBaseInStructure *prev_of_export_info = vkr_find_prev_struct(
+            void *prev_of_export_info = vkr_find_prev_struct(
                alloc_info, VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO);
 
-            prev_of_export_info->pNext = export_info->pNext;
+            vkr_pnext_set_next(prev_of_export_info, export_info->pNext);
             export_info = NULL;
          }
 
