@@ -387,9 +387,21 @@ vkr_cs_decoder_get_blob_storage(struct vkr_cs_decoder *dec, size_t size)
 static inline void *
 vkr_cs_encoder_get_blob_storage(struct vkr_cs_encoder *enc, size_t offset, size_t size)
 {
-   return unlikely(offset + size > (size_t)(enc->end - enc->cur))
-             ? NULL
-             : (void *)(enc->cur + offset);
+   size_t end_offset;
+   if (unlikely(__builtin_add_overflow(offset, size, &end_offset))) {
+      vkr_log("encoder overflow with %zu requested at offset %zu", size, offset);
+      vkr_cs_encoder_set_fatal(enc);
+      return NULL;
+   }
+
+   if (unlikely(end_offset > (size_t)(enc->end - enc->cur))) {
+      vkr_log("encoder requested blob storage %zu + %zu exceeds %zu", offset, size,
+              (size_t)(enc->end - enc->cur));
+      vkr_cs_encoder_set_fatal(enc);
+      return NULL;
+   }
+
+   return (void *)(enc->cur + offset);
 }
 
 static inline bool
