@@ -374,7 +374,14 @@ vkr_cs_decoder_alloc_temp_array(struct vkr_cs_decoder *dec, size_t size, size_t 
 static inline void *
 vkr_cs_decoder_get_blob_storage(struct vkr_cs_decoder *dec, size_t size)
 {
-   return unlikely(size > (size_t)(dec->end - dec->cur)) ? NULL : (void *)dec->cur;
+   if (unlikely(size > (size_t)(dec->end - dec->cur))) {
+      vkr_log("decoder requested blob storage %zu exceeds %zu", size,
+              (size_t)(dec->end - dec->cur));
+      vkr_cs_decoder_set_fatal(dec);
+      return NULL;
+   }
+
+   return (void *)dec->cur;
 }
 
 static inline void *
