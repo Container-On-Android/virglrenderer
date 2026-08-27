@@ -167,17 +167,13 @@ vkr_context_get_fatal(struct vkr_context *ctx)
 }
 
 static inline bool
-vkr_context_validate_object_id(struct vkr_context *ctx, vkr_object_id id)
+vkr_context_validate_object_id_locked(struct vkr_context *ctx, vkr_object_id id)
 {
-   mtx_lock(&ctx->object_mutex);
    if (unlikely(!id || _mesa_hash_table_search(ctx->object_table, &id))) {
-      mtx_unlock(&ctx->object_mutex);
       vkr_log("invalid object id %" PRIu64, id);
       vkr_context_set_fatal(ctx);
       return false;
    }
-   mtx_unlock(&ctx->object_mutex);
-
    return true;
 }
 
@@ -188,9 +184,6 @@ vkr_context_alloc_object(UNUSED struct vkr_context *ctx,
                          const void *id_handle)
 {
    const vkr_object_id id = vkr_cs_handle_load_id((const void **)id_handle, type);
-   if (!vkr_context_validate_object_id(ctx, id))
-      return NULL;
-
    return vkr_object_alloc(size, type, id);
 }
 
@@ -201,11 +194,9 @@ static inline void
 vkr_context_add_object(struct vkr_context *ctx, struct vkr_object *obj)
 {
    assert(vkr_is_recognized_object_type(obj->type));
-   assert(obj->id);
-
    mtx_lock(&ctx->object_mutex);
-   assert(!_mesa_hash_table_search(ctx->object_table, &obj->id));
-   _mesa_hash_table_insert(ctx->object_table, &obj->id, obj);
+   if (vkr_context_validate_object_id_locked(ctx, obj->id))
+      _mesa_hash_table_insert(ctx->object_table, &obj->id, obj);
    mtx_unlock(&ctx->object_mutex);
 }
 

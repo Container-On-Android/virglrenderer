@@ -297,8 +297,6 @@ vkr_queue_assign_object_id(struct vkr_context *ctx,
          vkr_context_set_fatal(ctx);
       return;
    }
-   if (!vkr_context_validate_object_id(ctx, id))
-      return;
 
    queue->base.id = id;
 
