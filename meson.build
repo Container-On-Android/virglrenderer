@@ -364,7 +364,7 @@ endif
 
 if with_venus
    dep_venus_protocol = dependency('venus-protocol',
-     version : '== 1.1',
+     version : '== 1.1.1',
      fallback : ['venus-protocol', 'dep_vn_protocol_renderer'],
      required : true
    )
